@@ -19,20 +19,19 @@ import {
     query, 
     where, 
     getDocs, 
-    getDoc 
+    getDoc,
+    Timestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Your web app's Firebase configuration
-// IMPORTANT: Replace this with your own Firebase project configuration.
 const firebaseConfig = {
-            apiKey: "AIzaSyBvgtcboYh6obMj4DfB3c-M5OPMpQvYARE",
-            authDomain: "ppeinv-62495.firebaseapp.com",
-            projectId: "ppeinv-62495",
-            storageBucket: "ppeinv-62495.firebasestorage.app",
-            messagingSenderId: "88329104396",
-            appId: "1:88329104396:web:42e2f2a5df9b06a174d229"
-        };
-
+    apiKey: "AIzaSyBvgtcboYh6obMj4DfB3c-M5OPMpQvYARE",
+    authDomain: "ppeinv-62495.firebaseapp.com",
+    projectId: "ppeinv-62495",
+    storageBucket: "ppeinv-62495.firebasestorage.app",
+    messagingSenderId: "88329104396",
+    appId: "1:88329104396:web:42e2f2a5df9b06a174d229"
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -57,5 +56,7 @@ export {
     query,
     where,
     getDocs,
-    getDoc
+    getDoc,
+    Timestamp
 };
+
