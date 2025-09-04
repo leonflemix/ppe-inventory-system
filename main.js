@@ -33,6 +33,7 @@ const purchasesView = document.getElementById('purchases-view');
 const reportsView = document.getElementById('reports-view');
 const employeesView = document.getElementById('employees-view');
 const machinesView = document.getElementById('machines-view');
+const suppliersView = document.getElementById('suppliers-view');
 const tableManagerView = document.getElementById('table-manager-view');
 const toastContainer = document.getElementById('toast-container');
 const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -42,6 +43,7 @@ const authForm = document.getElementById('auth-form');
 let currentInventory = [];
 let currentEmployees = [];
 let currentMachines = [];
+let currentSuppliers = [];
 let currentUsageLogs = [];
 let currentPurchases = [];
 let currentUserIsAdmin = false;
@@ -112,6 +114,7 @@ document.getElementById('nav-purchases').addEventListener('click', (e) => switch
 document.getElementById('nav-reports').addEventListener('click', (e) => switchView(e, 'reports'));
 document.getElementById('nav-employees').addEventListener('click', (e) => switchView(e, 'employees'));
 document.getElementById('nav-machines').addEventListener('click', (e) => switchView(e, 'machines'));
+document.getElementById('nav-suppliers').addEventListener('click', (e) => switchView(e, 'suppliers'));
 document.getElementById('nav-table-manager').addEventListener('click', (e) => switchView(e, 'table-manager'));
 
 sidebarToggle.addEventListener('click', () => {
@@ -144,7 +147,7 @@ function switchView(event, viewName) {
     document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
     event.currentTarget.classList.add('active');
     
-    const views = { dashboard: dashboardView, purchases: purchasesView, reports: reportsView, employees: employeesView, machines: machinesView, 'table-manager': tableManagerView };
+    const views = { dashboard: dashboardView, purchases: purchasesView, reports: reportsView, employees: employeesView, machines: machinesView, suppliers: suppliersView, 'table-manager': tableManagerView };
     Object.keys(views).forEach(key => {
         views[key].classList.toggle('hidden', key !== viewName);
     });
@@ -158,6 +161,7 @@ onAuthStateChanged(auth, (user) => {
         currentUserIsAdmin = adminEmails.includes(user.email);
         document.getElementById('nav-employees').classList.toggle('hidden', !currentUserIsAdmin);
         document.getElementById('nav-machines').classList.toggle('hidden', !currentUserIsAdmin);
+        document.getElementById('nav-suppliers').classList.toggle('hidden', !currentUserIsAdmin);
         document.getElementById('nav-table-manager').classList.toggle('hidden', !currentUserIsAdmin);
         document.getElementById('add-item-btn').classList.toggle('hidden', !currentUserIsAdmin);
         
@@ -167,6 +171,7 @@ onAuthStateChanged(auth, (user) => {
         listenForInventoryUpdates();
         listenForEmployeeUpdates();
         listenForMachineUpdates();
+        listenForSupplierUpdates();
         listenForUsageLogUpdates();
         listenForPurchaseUpdates();
     } else {
@@ -211,6 +216,7 @@ const inventoryCollection = collection(db, 'inventory');
 const usageLogCollection = collection(db, 'usageLog');
 const employeesCollection = collection(db, 'employees');
 const machinesCollection = collection(db, 'machines');
+const suppliersCollection = collection(db, 'suppliers');
 const purchasesCollection = collection(db, 'purchases');
 
 // --- REAL-TIME LISTENERS ---
@@ -235,6 +241,13 @@ function listenForMachineUpdates() {
         currentMachines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderMachinesTable();
         populateMachineDropdowns();
+    });
+}
+function listenForSupplierUpdates() {
+    onSnapshot(suppliersCollection, (snapshot) => {
+        currentSuppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderSuppliersTable();
+        populateSupplierDropdowns();
     });
 }
 function listenForUsageLogUpdates() {
@@ -353,6 +366,7 @@ function renderUsageTrendChart(docs) {
 
 // --- Generic Search & Sort ---
 function applySearch(data, searchTerm, key = 'name') {
+    if (!searchTerm) return data;
     return data.filter(item => item[key] && item[key].toLowerCase().includes(searchTerm.toLowerCase()));
 }
 
@@ -376,14 +390,16 @@ function applySort(data, sortKey, sortOrder) {
 }
 
 function setupTableSorting(tableElement, renderFunction) {
-    tableElement.querySelector('thead').addEventListener('click', e => {
+    const thead = tableElement.querySelector('thead');
+    if (!thead) return;
+    thead.addEventListener('click', e => {
         const header = e.target.closest('.sortable');
         if (!header) return;
         
         const key = header.dataset.sort;
         const currentOrder = header.classList.contains('asc') ? 'desc' : 'asc';
 
-        tableElement.querySelectorAll('.sortable').forEach(th => th.classList.remove('asc', 'desc'));
+        thead.querySelectorAll('.sortable').forEach(th => th.classList.remove('asc', 'desc'));
         header.classList.add(currentOrder);
 
         sortState = { key, order: currentOrder };
@@ -394,6 +410,7 @@ function setupTableSorting(tableElement, renderFunction) {
 setupTableSorting(document.querySelector('#inventory-table-body').closest('table'), renderInventoryTable);
 setupTableSorting(document.querySelector('#employees-table-body').closest('table'), renderEmployeesTable);
 setupTableSorting(document.querySelector('#machines-table-body').closest('table'), renderMachinesTable);
+setupTableSorting(document.querySelector('#suppliers-table-body').closest('table'), renderSuppliersTable);
 setupTableSorting(document.querySelector('#purchases-table-body').closest('table'), renderPurchasesTable);
 
 
@@ -453,6 +470,33 @@ document.getElementById('machines-table-body').addEventListener('click', (e) => 
 document.getElementById('edit-machine-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('edit-machine-id').value; const newName = document.getElementById('edit-machine-name-input').value.trim(); if (id && newName) { await updateDoc(doc(db, 'machines', id), { name: newName }); hideModal(document.getElementById('edit-machine-modal')); showToast('Machine updated!'); } });
 document.getElementById('cancel-edit-machine-btn').addEventListener('click', () => hideModal(document.getElementById('edit-machine-modal')));
 
+// --- SUPPLIER MANAGEMENT ---
+document.getElementById('supplier-search').addEventListener('input', () => renderSuppliersTable());
+document.getElementById('add-supplier-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('supplier-name-input'); const name = input.value.trim(); if (name) { await addDoc(suppliersCollection, { name }); input.value = ''; showToast('Supplier added successfully!'); } });
+function renderSuppliersTable() {
+    const searchTerm = document.getElementById('supplier-search').value;
+    const filtered = applySearch(currentSuppliers, searchTerm);
+    const sorted = applySort(filtered, sortState.key, sortState.order);
+    const tableBody = document.getElementById('suppliers-table-body');
+    tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No suppliers found.</td></tr>' : sorted.map(s => `
+        <tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${s.name}</td><td class="px-6 py-4 text-center space-x-2"><button class="edit-supplier-btn text-blue-600 hover:text-blue-900" data-id="${s.id}" data-name="${s.name}"><i class="fas fa-edit"></i> Edit</button><button class="delete-supplier-btn text-red-600 hover:text-red-900" data-id="${s.id}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join('');
+}
+document.getElementById('suppliers-table-body').addEventListener('click', (e) => {
+    const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id;
+    if (target.classList.contains('delete-supplier-btn')) { 
+         showConfirm('Are you sure you want to delete this supplier?', async () => {
+            await deleteDoc(doc(db, 'suppliers', id));
+            showToast('Supplier deleted.', 'success');
+         });
+    } 
+    else if (target.classList.contains('edit-supplier-btn')) { 
+        document.getElementById('edit-supplier-id').value = id; 
+        document.getElementById('edit-supplier-name-input').value = target.dataset.name; 
+        showModal(document.getElementById('edit-supplier-modal')); 
+    }
+});
+document.getElementById('edit-supplier-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('edit-supplier-id').value; const newName = document.getElementById('edit-supplier-name-input').value.trim(); if (id && newName) { await updateDoc(doc(db, 'suppliers', id), { name: newName }); hideModal(document.getElementById('edit-supplier-modal')); showToast('Supplier updated!'); } });
+document.getElementById('cancel-edit-supplier-btn').addEventListener('click', () => hideModal(document.getElementById('edit-supplier-modal')));
 
 // --- INVENTORY, USAGE, & RESTOCKING LOGIC ---
 document.getElementById('inventory-search').addEventListener('input', () => renderInventoryTable());
@@ -571,10 +615,12 @@ document.getElementById('restock-form').addEventListener('submit', async (e) => 
     const itemName = document.getElementById('restock-item-name').textContent;
     const quantity = parseInt(document.getElementById('restock-quantity').value);
     const totalCost = parseFloat(document.getElementById('restock-cost').value) || 0;
-    const supplier = document.getElementById('restock-supplier').value.trim();
+    const supplierSelect = document.getElementById('restock-supplier');
+    const supplierId = supplierSelect.value;
+    const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text;
     const location = document.getElementById('restock-location').value;
 
-    if (!itemId || !quantity || !location) {
+    if (!itemId || !quantity || !location || !supplierId) {
         showAlert('Please fill all required fields.', 'Missing Information');
         return;
     }
@@ -593,7 +639,8 @@ document.getElementById('restock-form').addEventListener('submit', async (e) => 
                 itemName,
                 quantity,
                 totalCost,
-                supplier,
+                supplier: supplierName,
+                supplierId,
                 restockLocation: location,
                 purchaseDate: serverTimestamp()
             });
@@ -607,10 +654,37 @@ document.getElementById('restock-form').addEventListener('submit', async (e) => 
 
 
 // --- PURCHASES VIEW ---
-document.getElementById('purchase-search').addEventListener('input', () => renderPurchasesTable());
+const purchaseFilters = document.getElementById('purchases-filter-container');
+purchaseFilters.addEventListener('input', () => renderPurchasesTable());
+document.getElementById('reset-filters-btn').addEventListener('click', () => {
+    document.getElementById('purchase-search').value = '';
+    document.getElementById('supplier-filter').value = '';
+    document.getElementById('start-date-filter').value = '';
+    document.getElementById('end-date-filter').value = '';
+    renderPurchasesTable();
+});
+
 function renderPurchasesTable() {
     const searchTerm = document.getElementById('purchase-search').value;
-    const filtered = applySearch(currentPurchases, searchTerm, 'itemName');
+    const supplierId = document.getElementById('supplier-filter').value;
+    const startDate = document.getElementById('start-date-filter').value;
+    const endDate = document.getElementById('end-date-filter').value;
+
+    let filtered = applySearch(currentPurchases, searchTerm, 'itemName');
+    
+    if (supplierId) {
+        filtered = filtered.filter(p => p.supplierId === supplierId);
+    }
+    if (startDate) {
+        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() >= new Date(startDate));
+    }
+    if (endDate) {
+        // Add 1 day to the end date to make it inclusive
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() < end);
+    }
+
     const sorted = applySort(filtered, sortState.key, sortState.order);
 
     const tableBody = document.getElementById('purchases-table-body');
@@ -656,6 +730,16 @@ function populateMachineDropdowns() {
         const currentVal = select.value;
         select.innerHTML = `<option value="">-- Select Machine --</option>`;
         currentMachines.forEach(m => select.innerHTML += `<option value="${m.id}">${m.name}</option>`);
+        select.value = currentVal;
+    });
+}
+function populateSupplierDropdowns() {
+    const selects = [document.getElementById('restock-supplier'), document.getElementById('supplier-filter')];
+     selects.forEach(select => {
+        const currentVal = select.value;
+        const firstOption = select.id === 'supplier-filter' ? '<option value="">All Suppliers</option>' : '<option value="">-- Select Supplier --</option>';
+        select.innerHTML = firstOption;
+        currentSuppliers.forEach(s => select.innerHTML += `<option value="${s.id}">${s.name}</option>`);
         select.value = currentVal;
     });
 }
