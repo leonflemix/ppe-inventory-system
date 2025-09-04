@@ -6,15 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PPE Inventory Management System</title>
     <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
     <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css)">
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)">
+    <link rel="preconnect" href="[https://fonts.gstatic.com](https://fonts.gstatic.com)" crossorigin>
+    <link href="[https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
     <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="[https://cdn.jsdelivr.net/npm/chart.js](https://cdn.jsdelivr.net/npm/chart.js)"></script>
     <!-- Link to your custom stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -184,12 +184,17 @@
 
                     <!-- Reports View -->
                     <div id="reports-view" class="hidden space-y-8">
-                        <div class="bg-white rounded-xl shadow-md p-6">
+                         <div class="bg-white rounded-xl shadow-md p-6">
                              <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-gray-700">Item Usage Report</h2>
                                 <button id="export-item-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
                             </div>
-                            <div class="flex items-center space-x-4 mb-4"><label for="report-item-select" class="font-semibold">Select PPE Item:</label><select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select></div>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select>
+                                <input type="date" id="item-report-start-date" class="p-2 border rounded-lg">
+                                <input type="date" id="item-report-end-date" class="p-2 border rounded-lg">
+                                <button id="item-report-reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Reset</button>
+                            </div>
                              <!-- Item Usage Trend Chart -->
                             <div id="usage-trend-chart-container" class="hidden bg-white rounded-xl p-6 mb-6">
                                 <h3 class="text-lg font-semibold text-gray-700 mb-4">Usage Trend</h3>
@@ -202,7 +207,12 @@
                                 <h2 class="text-xl font-bold text-gray-700">Employee PPE History</h2>
                                 <button id="export-employee-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
                             </div>
-                            <div class="flex items-center space-x-4 mb-4"><label for="report-employee-select" class="font-semibold">Employee Name:</label><select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select></div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select>
+                                <input type="date" id="employee-report-start-date" class="p-2 border rounded-lg">
+                                <input type="date" id="employee-report-end-date" class="p-2 border rounded-lg">
+                                <button id="employee-report-reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Reset</button>
+                            </div>
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="employee-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr></tbody></table></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
@@ -210,7 +220,12 @@
                                 <h2 class="text-xl font-bold text-gray-700">Machine Usage Report</h2>
                                 <button id="export-machine-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
                             </div>
-                            <div class="flex items-center space-x-4 mb-4"><label for="report-machine-select" class="font-semibold">Machine Name:</label><select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select></div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select>
+                                <input type="date" id="machine-report-start-date" class="p-2 border rounded-lg">
+                                <input type="date" id="machine-report-end-date" class="p-2 border rounded-lg">
+                                <button id="machine-report-reset-btn" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Reset</button>
+                            </div>
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
                         </div>
                     </div>

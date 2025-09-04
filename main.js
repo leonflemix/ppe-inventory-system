@@ -47,7 +47,7 @@ let currentSuppliers = [];
 let currentUsageLogs = [];
 let currentPurchases = [];
 let currentUserIsAdmin = false;
-let activeReport = { type: null, id: null, data: [] };
+let activeReport = { type: null, data: [] };
 let sortState = { key: 'name', order: 'asc' };
 let topUsedItemsChart, itemsByCategoryChart, usageTrendChart;
 
@@ -768,29 +768,82 @@ function exportToCsv(filename, data) {
     document.body.removeChild(a);
 }
 
-document.getElementById('export-item-report-btn').addEventListener('click', () => exportToCsv(`item-report-${activeReport.id}.csv`, activeReport.data));
-document.getElementById('export-employee-report-btn').addEventListener('click', () => exportToCsv(`employee-report-${activeReport.id}.csv`, activeReport.data));
-document.getElementById('export-machine-report-btn').addEventListener('click', () => exportToCsv(`machine-report-${activeReport.id}.csv`, activeReport.data));
+document.getElementById('export-item-report-btn').addEventListener('click', () => exportToCsv(`item-report.csv`, activeReport.data));
+document.getElementById('export-employee-report-btn').addEventListener('click', () => exportToCsv(`employee-report.csv`, activeReport.data));
+document.getElementById('export-machine-report-btn').addEventListener('click', () => exportToCsv(`machine-report.csv`, activeReport.data));
+
+// --- Report Filters Listeners ---
+document.getElementById('report-item-select').addEventListener('change', fetchAndRenderItemReport);
+document.getElementById('item-report-start-date').addEventListener('input', fetchAndRenderItemReport);
+document.getElementById('item-report-end-date').addEventListener('input', fetchAndRenderItemReport);
+document.getElementById('item-report-reset-btn').addEventListener('click', () => {
+    document.getElementById('report-item-select').value = '';
+    document.getElementById('item-report-start-date').value = '';
+    document.getElementById('item-report-end-date').value = '';
+    fetchAndRenderItemReport();
+});
+
+document.getElementById('report-employee-select').addEventListener('change', fetchAndRenderEmployeeReport);
+document.getElementById('employee-report-start-date').addEventListener('input', fetchAndRenderEmployeeReport);
+document.getElementById('employee-report-end-date').addEventListener('input', fetchAndRenderEmployeeReport);
+document.getElementById('employee-report-reset-btn').addEventListener('click', () => {
+    document.getElementById('report-employee-select').value = '';
+    document.getElementById('employee-report-start-date').value = '';
+    document.getElementById('employee-report-end-date').value = '';
+    fetchAndRenderEmployeeReport();
+});
+
+document.getElementById('report-machine-select').addEventListener('change', fetchAndRenderMachineReport);
+document.getElementById('machine-report-start-date').addEventListener('input', fetchAndRenderMachineReport);
+document.getElementById('machine-report-end-date').addEventListener('input', fetchAndRenderMachineReport);
+document.getElementById('machine-report-reset-btn').addEventListener('click', () => {
+    document.getElementById('report-machine-select').value = '';
+    document.getElementById('machine-report-start-date').value = '';
+    document.getElementById('machine-report-end-date').value = '';
+    fetchAndRenderMachineReport();
+});
 
 
-document.getElementById('report-item-select').addEventListener('change', (e) => fetchAndRenderItemReport(e.target.value));
-document.getElementById('report-employee-select').addEventListener('change', (e) => fetchAndRenderEmployeeReport(e.target.value));
-document.getElementById('report-machine-select').addEventListener('change', (e) => fetchAndRenderMachineReport(e.target.value));
+async function fetchAndRenderItemReport() {
+    activeReport.type = 'item';
+    const itemId = document.getElementById('report-item-select').value;
+    const startDate = document.getElementById('item-report-start-date').value;
+    const endDate = document.getElementById('item-report-end-date').value;
 
-async function fetchAndRenderItemReport(itemId) {
     const btn = document.getElementById('export-item-report-btn');
     const chartContainer = document.getElementById('usage-trend-chart-container');
-    activeReport = { type: 'item', id: itemId, data: [] };
     const tableBody = document.getElementById('item-report-table-body');
+    
     if (!itemId) { 
-        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item.</td></tr>`; 
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr>`; 
         btn.disabled = true; 
         chartContainer.classList.add('hidden');
+        activeReport.data = [];
         return; 
     }
-    const q = query(usageLogCollection, where("itemId", "==", itemId));
+
+    let constraints = [where("itemId", "==", itemId)];
+    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+    }
+    
+    const q = query(usageLogCollection, ...constraints);
     const snapshot = await getDocs(q);
-    activeReport.data = snapshot.docs.map(d => d.data());
+    activeReport.data = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+            date: data.timestamp.toDate().toLocaleString(),
+            employee: data.employeeName,
+            machine: data.machineName,
+            quantity: data.quantityUsed,
+            location: data.location,
+            loggedBy: data.loggedBy,
+            notes: data.notes
+        };
+    });
     btn.disabled = activeReport.data.length === 0;
     
     if(snapshot.docs.length > 0) {
@@ -802,37 +855,95 @@ async function fetchAndRenderItemReport(itemId) {
 
     renderReportTable(tableBody, snapshot.docs, 'item');
 }
-async function fetchAndRenderEmployeeReport(employeeId) {
+
+async function fetchAndRenderEmployeeReport() {
+    activeReport.type = 'employee';
+    const employeeId = document.getElementById('report-employee-select').value;
+    const startDate = document.getElementById('employee-report-start-date').value;
+    const endDate = document.getElementById('employee-report-end-date').value;
+    
     const btn = document.getElementById('export-employee-report-btn');
-    activeReport = { type: 'employee', id: employeeId, data: [] };
     const tableBody = document.getElementById('employee-report-table-body');
-    if (!employeeId) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an employee.</td></tr>'; btn.disabled = true; return; }
-    const q = query(usageLogCollection, where("employeeId", "==", employeeId));
+    if (!employeeId) { 
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr>'; 
+        btn.disabled = true;
+        activeReport.data = []; 
+        return; 
+    }
+    
+    let constraints = [where("employeeId", "==", employeeId)];
+    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+    }
+
+    const q = query(usageLogCollection, ...constraints);
     const snapshot = await getDocs(q);
-    activeReport.data = snapshot.docs.map(d => d.data());
+    activeReport.data = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+            date: data.timestamp.toDate().toLocaleString(),
+            item: data.itemName,
+            machine: data.machineName,
+            quantity: data.quantityUsed,
+            location: data.location,
+            loggedBy: data.loggedBy
+        };
+    });
     btn.disabled = activeReport.data.length === 0;
     renderReportTable(tableBody, snapshot.docs, 'employee');
 }
-async function fetchAndRenderMachineReport(machineId) {
+
+async function fetchAndRenderMachineReport() {
+    activeReport.type = 'machine';
+    const machineId = document.getElementById('report-machine-select').value;
+    const startDate = document.getElementById('machine-report-start-date').value;
+    const endDate = document.getElementById('machine-report-end-date').value;
+
     const btn = document.getElementById('export-machine-report-btn');
-    activeReport = { type: 'machine', id: machineId, data: [] };
     const tableBody = document.getElementById('machine-report-table-body');
-    if (!machineId) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500">Select a machine.</td></tr>'; btn.disabled = true; return; }
-    const q = query(usageLogCollection, where("machineId", "==", machineId));
+    if (!machineId) { 
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr>'; 
+        btn.disabled = true;
+        activeReport.data = []; 
+        return; 
+    }
+    
+    let constraints = [where("machineId", "==", machineId)];
+    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (endDate) {
+        const end = new Date(endDate);
+        end.setDate(end.getDate() + 1);
+        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+    }
+
+    const q = query(usageLogCollection, ...constraints);
     const snapshot = await getDocs(q);
-    activeReport.data = snapshot.docs.map(d => d.data());
+    activeReport.data = snapshot.docs.map(d => {
+        const data = d.data();
+        return {
+            date: data.timestamp.toDate().toLocaleString(),
+            item: data.itemName,
+            employee: data.employeeName,
+            quantity: data.quantityUsed,
+            location: data.location,
+            loggedBy: data.loggedBy
+        };
+    });
     btn.disabled = activeReport.data.length === 0;
     renderReportTable(tableBody, snapshot.docs, 'machine');
 }
 
 function renderReportTable(tableBody, docs, reportType) {
-    const colCount = currentUserIsAdmin ? 7 : 6;
-    const showActions = currentUserIsAdmin;
+    const colCount = currentUserIsAdmin && reportType === 'item' ? 7 : 6;
+    const showActions = currentUserIsAdmin && reportType === 'item';
     
     let headers = `
         <th class="px-6 py-3">Date</th>
         <th class="px-6 py-3">${reportType === 'item' ? 'Employee' : 'PPE Item'}</th>
-        <th class="px-6 py-3">${reportType === 'machine' ? 'Employee' : 'Machine'}</th>
+        <th class="px-6 py-3">${reportType === 'machine' ? 'Employee' : (reportType === 'employee' ? 'Machine' : 'Machine')}</th>
         <th class="px-6 py-3">Quantity</th>
         <th class="px-6 py-3">Location</th>
         <th class="px-6 py-3">Logged By</th>
@@ -900,13 +1011,12 @@ document.getElementById('edit-log-form').addEventListener('submit', async (e) =>
 });
 
 function refreshActiveReport() {
-    if (!activeReport.id) return;
     if (activeReport.type === 'item') {
-        fetchAndRenderItemReport(activeReport.id);
+        fetchAndRenderItemReport();
     } else if (activeReport.type === 'employee') {
-        fetchAndRenderEmployeeReport(activeReport.id);
+        fetchAndRenderEmployeeReport();
     } else if (activeReport.type === 'machine') {
-        fetchAndRenderMachineReport(activeReport.id);
+        fetchAndRenderMachineReport();
     }
 }
 
