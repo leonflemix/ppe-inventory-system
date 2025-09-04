@@ -114,6 +114,27 @@ sidebarToggle.addEventListener('click', () => {
     appContainer.classList.toggle('sidebar-collapsed');
 });
 
+dashboardView.addEventListener('click', (e) => {
+    const toggleBtn = e.target.closest('.chart-toggle-btn');
+    if (!toggleBtn) return;
+
+    const chartBodyId = toggleBtn.dataset.chart;
+    const chartBody = document.getElementById(chartBodyId);
+    const icon = toggleBtn.querySelector('i');
+
+    if (chartBody) {
+        chartBody.classList.toggle('hidden');
+        if (chartBody.classList.contains('hidden')) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        } else {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    }
+});
+
+
 function switchView(event, viewName) {
     event.preventDefault();
     document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
