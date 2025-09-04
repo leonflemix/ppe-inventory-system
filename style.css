@@ -22,12 +22,23 @@ body {
 
 /* Sidebar Toggle Styles */
 #sidebar {
-    transform: translateX(0);
+    /* The `transition-all` class in the HTML handles this, but let's ensure it's smooth */
+    transition: width 0.3s ease-in-out;
+    overflow-x: hidden; /* Prevents content from wrapping and showing during collapse */
 }
+
 .sidebar-collapsed #sidebar {
-    transform: translateX(-100%);
     width: 0;
 }
+
+/* This new rule smoothly hides the content inside the sidebar as it collapses */
+.sidebar-collapsed #sidebar > * {
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap; /* Prevents text from wrapping on new lines */
+    transition: opacity 0.1s linear;
+}
+
 
 /* Sortable table headers */
 .sortable {
