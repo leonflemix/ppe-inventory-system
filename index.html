@@ -1,3 +1,4 @@
+<!-- Filename: index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -94,24 +95,39 @@
                            <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-red-100 text-red-600 p-4 rounded-full mr-4"><i class="fas fa-times-circle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Out of Stock Items</p><p id="out-of-stock-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <div class="flex justify-between items-center mb-4"><h2 class="text-xl font-bold text-gray-700">Inventory Status</h2><button id="add-item-btn" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300"><i class="fas fa-plus mr-2"></i>Add New Item</button></div>
-                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">PPE Item</th><th scope="col" class="px-6 py-3">Category</th><th scope="col" class="px-6 py-3">Location 1 Stock</th><th scope="col" class="px-6 py-3">Location 2 Stock</th><th scope="col" class="px-6 py-3">Total Stock</th><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="inventory-table-body"><tr><td colspan="7" class="text-center p-8">Loading inventory...</td></tr></tbody></table></div>
+                            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                                <h2 class="text-xl font-bold text-gray-700">Inventory Status</h2>
+                                <div class="flex items-center space-x-4 w-full sm:w-auto">
+                                    <input type="text" id="inventory-search" placeholder="Search items..." class="w-full sm:w-64 p-2 border rounded-lg">
+                                    <button id="add-item-btn" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Add New Item</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3 sortable" data-sort="name">PPE Item</th><th scope="col" class="px-6 py-3 sortable" data-sort="category">Category</th><th scope="col" class="px-6 py-3 sortable" data-sort="location1">Location 1 Stock</th><th scope="col" class="px-6 py-3 sortable" data-sort="location2">Location 2 Stock</th><th scope="col" class="px-6 py-3 sortable" data-sort="totalStock">Total Stock</th><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="inventory-table-body"><tr><td colspan="7" class="text-center p-8">Loading inventory...</td></tr></tbody></table></div>
                         </div>
                     </div>
                     <!-- Reports View -->
                     <div id="reports-view" class="hidden space-y-8">
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Item Usage Report</h2>
+                             <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Item Usage Report</h2>
+                                <button id="export-item-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
                             <div class="flex items-center space-x-4 mb-4"><label for="report-item-select" class="font-semibold">Select PPE Item:</label><select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select></div>
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th id="item-report-actions-header" class="px-6 py-3">Actions</th></tr></thead><tbody id="item-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr></tbody></table></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Employee PPE History</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Employee PPE History</h2>
+                                <button id="export-employee-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
                             <div class="flex items-center space-x-4 mb-4"><label for="report-employee-select" class="font-semibold">Employee Name:</label><select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select></div>
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="employee-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr></tbody></table></div>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Machine Usage Report</h2>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Machine Usage Report</h2>
+                                <button id="export-machine-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
                             <div class="flex items-center space-x-4 mb-4"><label for="report-machine-select" class="font-semibold">Machine Name:</label><select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select></div>
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
                         </div>
@@ -123,8 +139,11 @@
                             <form id="add-employee-form" class="flex items-center space-x-4"><label for="employee-name-input" class="font-semibold">Employee Name:</label><input type="text" id="employee-name-input" placeholder="Enter full name" class="flex-grow p-2 border rounded-lg" required><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-user-plus mr-2"></i>Add Employee</button></form>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Current Employees</h2>
-                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Employee Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="employees-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading employees...</td></tr></tbody></table></div>
+                             <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Current Employees</h2>
+                                <input type="text" id="employee-search" placeholder="Search employees..." class="w-64 p-2 border rounded-lg">
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Employee Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="employees-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading employees...</td></tr></tbody></table></div>
                         </div>
                     </div>
                      <!-- Machines View -->
@@ -134,8 +153,11 @@
                             <form id="add-machine-form" class="flex items-center space-x-4"><label for="machine-name-input" class="font-semibold">Machine Name/ID:</label><input type="text" id="machine-name-input" placeholder="Enter machine name or identifier" class="flex-grow p-2 border rounded-lg" required><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-plus mr-2"></i>Add Machine</button></form>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Current Machines</h2>
-                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Machine Name/ID</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="machines-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading machines...</td></tr></tbody></table></div>
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Current Machines</h2>
+                                <input type="text" id="machine-search" placeholder="Search machines..." class="w-64 p-2 border rounded-lg">
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Machine Name/ID</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="machines-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading machines...</td></tr></tbody></table></div>
                         </div>
                     </div>
                     <!-- Table Manager View -->
@@ -198,6 +220,10 @@
             </div>
         </div>
     </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
 
     <!-- Link to your main JavaScript file -->
     <script type="module" src="main.js"></script>
