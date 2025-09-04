@@ -17,7 +17,8 @@ import {
     where,
     getDocs,
     getDoc,
-    Timestamp
+    Timestamp,
+    serverTimestamp
 } from './firebase.js';
 
 // --- ADMIN CONFIGURATION ---
@@ -28,6 +29,7 @@ const appContainer = document.getElementById('app');
 const mainApp = document.getElementById('main-app');
 const pageTitle = document.getElementById('page-title');
 const dashboardView = document.getElementById('dashboard-view');
+const purchasesView = document.getElementById('purchases-view');
 const reportsView = document.getElementById('reports-view');
 const employeesView = document.getElementById('employees-view');
 const machinesView = document.getElementById('machines-view');
@@ -41,6 +43,7 @@ let currentInventory = [];
 let currentEmployees = [];
 let currentMachines = [];
 let currentUsageLogs = [];
+let currentPurchases = [];
 let currentUserIsAdmin = false;
 let activeReport = { type: null, id: null, data: [] };
 let sortState = { key: 'name', order: 'asc' };
@@ -105,6 +108,7 @@ confirmOkBtn.addEventListener('click', () => {
 
 // --- Navigation & UI ---
 document.getElementById('nav-dashboard').addEventListener('click', (e) => switchView(e, 'dashboard'));
+document.getElementById('nav-purchases').addEventListener('click', (e) => switchView(e, 'purchases'));
 document.getElementById('nav-reports').addEventListener('click', (e) => switchView(e, 'reports'));
 document.getElementById('nav-employees').addEventListener('click', (e) => switchView(e, 'employees'));
 document.getElementById('nav-machines').addEventListener('click', (e) => switchView(e, 'machines'));
@@ -140,7 +144,7 @@ function switchView(event, viewName) {
     document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
     event.currentTarget.classList.add('active');
     
-    const views = { dashboard: dashboardView, reports: reportsView, employees: employeesView, machines: machinesView, 'table-manager': tableManagerView };
+    const views = { dashboard: dashboardView, purchases: purchasesView, reports: reportsView, employees: employeesView, machines: machinesView, 'table-manager': tableManagerView };
     Object.keys(views).forEach(key => {
         views[key].classList.toggle('hidden', key !== viewName);
     });
@@ -163,7 +167,8 @@ onAuthStateChanged(auth, (user) => {
         listenForInventoryUpdates();
         listenForEmployeeUpdates();
         listenForMachineUpdates();
-        listenForUsageLogUpdates(); // New listener for charts
+        listenForUsageLogUpdates();
+        listenForPurchaseUpdates();
     } else {
         currentUserIsAdmin = false;
         mainApp.classList.add('hidden');
@@ -206,6 +211,7 @@ const inventoryCollection = collection(db, 'inventory');
 const usageLogCollection = collection(db, 'usageLog');
 const employeesCollection = collection(db, 'employees');
 const machinesCollection = collection(db, 'machines');
+const purchasesCollection = collection(db, 'purchases');
 
 // --- REAL-TIME LISTENERS ---
 function listenForInventoryUpdates() {
@@ -241,7 +247,12 @@ function listenForUsageLogUpdates() {
         updateDashboardCharts();
     });
 }
-
+function listenForPurchaseUpdates() {
+    onSnapshot(purchasesCollection, (snapshot) => {
+        currentPurchases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderPurchasesTable();
+    });
+}
 
 // --- CHARTING LOGIC ---
 function updateDashboardCharts() {
@@ -342,20 +353,29 @@ function renderUsageTrendChart(docs) {
 
 // --- Generic Search & Sort ---
 function applySearch(data, searchTerm, key = 'name') {
-    return data.filter(item => item[key].toLowerCase().includes(searchTerm.toLowerCase()));
+    return data.filter(item => item[key] && item[key].toLowerCase().includes(searchTerm.toLowerCase()));
 }
 
 function applySort(data, sortKey, sortOrder) {
     return [...data].sort((a, b) => {
-        const valA = (typeof a[sortKey] === 'string') ? a[sortKey].toLowerCase() : a[sortKey];
-        const valB = (typeof b[sortKey] === 'string') ? b[sortKey].toLowerCase() : b[sortKey];
+        let valA = a[sortKey];
+        let valB = b[sortKey];
+
+        // Handle Firestore Timestamps
+        if (valA && valA.toDate) valA = valA.toDate();
+        if (valB && valB.toDate) valB = valB.toDate();
+        
+        // Handle string comparison
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
         if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
         if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
         return 0;
     });
 }
 
-function setupTableSorting(tableElement) {
+function setupTableSorting(tableElement, renderFunction) {
     tableElement.querySelector('thead').addEventListener('click', e => {
         const header = e.target.closest('.sortable');
         if (!header) return;
@@ -367,23 +387,22 @@ function setupTableSorting(tableElement) {
         header.classList.add(currentOrder);
 
         sortState = { key, order: currentOrder };
-
-        if (tableElement.querySelector('tbody').id === 'inventory-table-body') renderInventoryTable();
-        if (tableElement.querySelector('tbody').id === 'employees-table-body') renderEmployeesTable();
-        if (tableElement.querySelector('tbody').id === 'machines-table-body') renderMachinesTable();
+        renderFunction();
     });
 }
 
-setupTableSorting(document.querySelector('#inventory-table-body').closest('table'));
-setupTableSorting(document.querySelector('#employees-table-body').closest('table'));
-setupTableSorting(document.querySelector('#machines-table-body').closest('table'));
+setupTableSorting(document.querySelector('#inventory-table-body').closest('table'), renderInventoryTable);
+setupTableSorting(document.querySelector('#employees-table-body').closest('table'), renderEmployeesTable);
+setupTableSorting(document.querySelector('#machines-table-body').closest('table'), renderMachinesTable);
+setupTableSorting(document.querySelector('#purchases-table-body').closest('table'), renderPurchasesTable);
 
 
 // --- EMPLOYEE MANAGEMENT ---
-document.getElementById('employee-search').addEventListener('input', (e) => renderEmployeesTable(null, e.target.value));
+document.getElementById('employee-search').addEventListener('input', () => renderEmployeesTable());
 document.getElementById('add-employee-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('employee-name-input'); const name = input.value.trim(); if (name) { await addDoc(employeesCollection, { name }); input.value = ''; showToast('Employee added successfully!'); } });
-function renderEmployeesTable(employees = currentEmployees, searchTerm = '') {
-    const filtered = applySearch(employees, searchTerm || document.getElementById('employee-search').value);
+function renderEmployeesTable() {
+    const searchTerm = document.getElementById('employee-search').value;
+    const filtered = applySearch(currentEmployees, searchTerm);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     const tableBody = document.getElementById('employees-table-body');
     tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No employees found.</td></tr>' : sorted.map(emp => `
@@ -407,10 +426,11 @@ document.getElementById('edit-employee-form').addEventListener('submit', async (
 document.getElementById('cancel-edit-employee-btn').addEventListener('click', () => hideModal(document.getElementById('edit-employee-modal')));
 
 // --- MACHINE MANAGEMENT ---
-document.getElementById('machine-search').addEventListener('input', (e) => renderMachinesTable(null, e.target.value));
+document.getElementById('machine-search').addEventListener('input', () => renderMachinesTable());
 document.getElementById('add-machine-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('machine-name-input'); const name = input.value.trim(); if (name) { await addDoc(machinesCollection, { name }); input.value = ''; showToast('Machine added successfully!'); } });
-function renderMachinesTable(machines = currentMachines, searchTerm = '') {
-    const filtered = applySearch(machines, searchTerm || document.getElementById('machine-search').value);
+function renderMachinesTable() {
+    const searchTerm = document.getElementById('machine-search').value;
+    const filtered = applySearch(currentMachines, searchTerm);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     const tableBody = document.getElementById('machines-table-body');
     tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No machines found.</td></tr>' : sorted.map(m => `
@@ -434,11 +454,12 @@ document.getElementById('edit-machine-form').addEventListener('submit', async (e
 document.getElementById('cancel-edit-machine-btn').addEventListener('click', () => hideModal(document.getElementById('edit-machine-modal')));
 
 
-// --- INVENTORY & USAGE LOGIC ---
-document.getElementById('inventory-search').addEventListener('input', (e) => renderInventoryTable(null, e.target.value));
-function renderInventoryTable(inventory = currentInventory, searchTerm = '') {
-    const withTotal = inventory.map(item => ({...item, totalStock: item.location1 + item.location2}));
-    const filtered = applySearch(withTotal, searchTerm || document.getElementById('inventory-search').value);
+// --- INVENTORY, USAGE, & RESTOCKING LOGIC ---
+document.getElementById('inventory-search').addEventListener('input', () => renderInventoryTable());
+function renderInventoryTable() {
+    const searchTerm = document.getElementById('inventory-search').value;
+    const withTotal = currentInventory.map(item => ({...item, totalStock: item.location1 + item.location2}));
+    const filtered = applySearch(withTotal, searchTerm);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     
     const tableBody = document.getElementById('inventory-table-body');
@@ -446,20 +467,40 @@ function renderInventoryTable(inventory = currentInventory, searchTerm = '') {
         let statusClass = 'bg-green-100 text-green-800'; let statusText = 'In Stock';
         if (item.totalStock <= 0) { statusClass = 'bg-red-100 text-red-800'; statusText = 'Out of Stock'; } 
         else if (item.totalStock <= item.lowStockThreshold) { statusClass = 'bg-yellow-100 text-yellow-800'; statusText = 'Low Stock'; }
-        const adminButtons = currentUserIsAdmin ? `<button class="edit-item-btn text-blue-600 hover:text-blue-900" data-id="${item.id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-item-btn text-red-600 hover:text-red-900" data-id="${item.id}"><i class="fas fa-trash"></i> Delete</button>` : '';
-        return `<tr class="bg-white border-b hover:bg-gray-50"><th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.name}</th><td class="px-6 py-4">${item.category}</td><td class="px-6 py-4">${item.location1}</td><td class="px-6 py-4">${item.location2}</td><td class="px-6 py-4 font-bold">${item.totalStock}</td><td class="px-6 py-4"><span class="px-2 py-1 font-semibold leading-tight text-xs rounded-full ${statusClass}">${statusText}</span></td><td class="px-6 py-4 text-center space-x-2"><button class="use-item-btn text-green-600 hover:text-green-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-clipboard-check"></i> Use</button>${adminButtons}</td></tr>`;
+        
+        const adminButtons = currentUserIsAdmin 
+            ? `<button class="restock-item-btn text-purple-600 hover:text-purple-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-plus-circle"></i> Restock</button>
+               <button class="edit-item-btn text-blue-600 hover:text-blue-900" data-id="${item.id}"><i class="fas fa-edit"></i> Edit</button>
+               <button class="delete-item-btn text-red-600 hover:text-red-900" data-id="${item.id}"><i class="fas fa-trash"></i> Delete</button>` 
+            : '';
+
+        return `<tr class="bg-white border-b hover:bg-gray-50">
+            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.name}</th>
+            <td class="px-6 py-4">${item.category}</td>
+            <td class="px-6 py-4">${item.location1}</td>
+            <td class="px-6 py-4">${item.location2}</td>
+            <td class="px-6 py-4 font-bold">${item.totalStock}</td>
+            <td class="px-6 py-4"><span class="px-2 py-1 font-semibold leading-tight text-xs rounded-full ${statusClass}">${statusText}</span></td>
+            <td class="px-6 py-4 text-center space-x-2">
+                <button class="use-item-btn text-green-600 hover:text-green-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-clipboard-check"></i> Use</button>
+                ${adminButtons}
+            </td>
+        </tr>`;
     }).join('');
 }
+
 function updateDashboardCards(inventory) {
     document.getElementById('total-items').textContent = inventory.length;
     document.getElementById('items-in-stock').textContent = inventory.reduce((sum, item) => sum + item.location1 + item.location2, 0);
     document.getElementById('low-stock-items').textContent = inventory.filter(item => (item.location1 + item.location2) > 0 && (item.location1 + item.location2) <= item.lowStockThreshold).length;
     document.getElementById('out-of-stock-items').textContent = inventory.filter(item => (item.location1 + item.location2) <= 0).length;
 }
+
 document.getElementById('inventory-table-body').addEventListener('click', (e) => {
     const target = e.target.closest('button');
     if (!target) return;
     const id = target.dataset.id;
+
     if (target.classList.contains('delete-item-btn') && currentUserIsAdmin) { 
         showConfirm('Are you sure you want to delete this item? This will remove it from inventory completely.', async () => {
             await deleteDoc(doc(db, 'inventory', id)); 
@@ -485,7 +526,14 @@ document.getElementById('inventory-table-body').addEventListener('click', (e) =>
          document.getElementById('use-item-form').reset();
          showModal(document.getElementById('use-item-modal'));
     }
+    else if (target.classList.contains('restock-item-btn')) {
+        document.getElementById('restock-item-id').value = id;
+        document.getElementById('restock-item-name').textContent = target.dataset.name;
+        document.getElementById('restock-form').reset();
+        showModal(document.getElementById('restock-modal'));
+    }
 });
+
 document.getElementById('use-item-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const itemId = document.getElementById('use-item-id').value;
@@ -516,6 +564,76 @@ document.getElementById('use-item-form').addEventListener('submit', async (e) =>
         showAlert("Transaction failed: " + error); 
     }
 });
+
+document.getElementById('restock-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const itemId = document.getElementById('restock-item-id').value;
+    const itemName = document.getElementById('restock-item-name').textContent;
+    const quantity = parseInt(document.getElementById('restock-quantity').value);
+    const totalCost = parseFloat(document.getElementById('restock-cost').value) || 0;
+    const supplier = document.getElementById('restock-supplier').value.trim();
+    const location = document.getElementById('restock-location').value;
+
+    if (!itemId || !quantity || !location) {
+        showAlert('Please fill all required fields.', 'Missing Information');
+        return;
+    }
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const itemRef = doc(db, 'inventory', itemId);
+            const itemDoc = await transaction.get(itemRef);
+            if (!itemDoc.exists()) throw "Item does not exist!";
+            const currentStock = itemDoc.data()[location];
+            transaction.update(itemRef, { [location]: currentStock + quantity });
+
+            await addDoc(purchasesCollection, {
+                loggedBy: auth.currentUser.email,
+                itemId,
+                itemName,
+                quantity,
+                totalCost,
+                supplier,
+                restockLocation: location,
+                purchaseDate: serverTimestamp()
+            });
+        });
+        hideModal(document.getElementById('restock-modal'));
+        showToast('Item restocked successfully!');
+    } catch (error) {
+        showAlert("Restock transaction failed: " + error);
+    }
+});
+
+
+// --- PURCHASES VIEW ---
+document.getElementById('purchase-search').addEventListener('input', () => renderPurchasesTable());
+function renderPurchasesTable() {
+    const searchTerm = document.getElementById('purchase-search').value;
+    const filtered = applySearch(currentPurchases, searchTerm, 'itemName');
+    const sorted = applySort(filtered, sortState.key, sortState.order);
+
+    const tableBody = document.getElementById('purchases-table-body');
+    if (sorted.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">No purchase records found.</td></tr>`;
+        return;
+    }
+    
+    tableBody.innerHTML = sorted.map(p => {
+        const date = p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A';
+        const cost = p.totalCost ? `$${p.totalCost.toFixed(2)}` : 'N/A';
+        return `<tr class="bg-white border-b hover:bg-gray-50">
+            <td class="px-6 py-4">${date}</td>
+            <td class="px-6 py-4 font-medium text-gray-900">${p.itemName}</td>
+            <td class="px-6 py-4">${p.quantity}</td>
+            <td class="px-6 py-4">${cost}</td>
+            <td class="px-6 py-4">${p.supplier || 'N/A'}</td>
+            <td class="px-6 py-4">${p.restockLocation === 'location1' ? 'Location 1' : 'Location 2'}</td>
+            <td class="px-6 py-4">${p.loggedBy}</td>
+        </tr>`;
+    }).join('');
+}
+
 
 // --- REPORTING & CSV EXPORT ---
 function populateItemReportDropdown() {
@@ -803,6 +921,8 @@ document.getElementById('cancel-item-btn').addEventListener('click', () => hideM
 document.getElementById('cancel-use-item-btn').addEventListener('click', () => hideModal(document.getElementById('use-item-modal')));
 document.getElementById('cancel-edit-log-btn').addEventListener('click', () => hideModal(document.getElementById('edit-log-modal')));
 document.getElementById('cancel-generic-edit-btn').addEventListener('click', () => hideModal(document.getElementById('generic-edit-modal')));
+document.getElementById('cancel-restock-btn').addEventListener('click', () => hideModal(document.getElementById('restock-modal')));
+
 document.getElementById('add-item-btn').addEventListener('click', () => {
     document.getElementById('modal-title').textContent = 'Add New PPE Item';
     document.getElementById('item-form').reset();
