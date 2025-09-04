@@ -20,6 +20,15 @@ body {
     border-left: 4px solid #f59e0b; /* Amber color */
 }
 
+/* Sidebar Toggle Styles */
+#sidebar {
+    transform: translateX(0);
+}
+.sidebar-collapsed #sidebar {
+    transform: translateX(-100%);
+    width: 0;
+}
+
 /* Sortable table headers */
 .sortable {
     cursor: pointer;

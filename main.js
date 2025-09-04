@@ -24,6 +24,7 @@ import {
 const adminEmails = ["leonflemixdartmouth@gmail.com", "your-email@example.com"];
 
 // --- DOM Elements ---
+const appContainer = document.getElementById('app');
 const mainApp = document.getElementById('main-app');
 const pageTitle = document.getElementById('page-title');
 const dashboardView = document.getElementById('dashboard-view');
@@ -32,6 +33,8 @@ const employeesView = document.getElementById('employees-view');
 const machinesView = document.getElementById('machines-view');
 const tableManagerView = document.getElementById('table-manager-view');
 const toastContainer = document.getElementById('toast-container');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const authForm = document.getElementById('auth-form');
 
 // --- App State ---
 let currentInventory = [];
@@ -100,12 +103,16 @@ confirmOkBtn.addEventListener('click', () => {
 });
 
 
-// --- Navigation ---
+// --- Navigation & UI ---
 document.getElementById('nav-dashboard').addEventListener('click', (e) => switchView(e, 'dashboard'));
 document.getElementById('nav-reports').addEventListener('click', (e) => switchView(e, 'reports'));
 document.getElementById('nav-employees').addEventListener('click', (e) => switchView(e, 'employees'));
 document.getElementById('nav-machines').addEventListener('click', (e) => switchView(e, 'machines'));
 document.getElementById('nav-table-manager').addEventListener('click', (e) => switchView(e, 'table-manager'));
+
+sidebarToggle.addEventListener('click', () => {
+    appContainer.classList.toggle('sidebar-collapsed');
+});
 
 function switchView(event, viewName) {
     event.preventDefault();
@@ -146,15 +153,31 @@ onAuthStateChanged(auth, (user) => {
 // --- Login/Signup Form Logic ---
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
-document.getElementById('login-btn').addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => showAlert(err.message, "Login Failed")));
-document.getElementById('signup-btn').addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => showAlert(err.message, "Signup Failed")));
+const loginBtn = document.getElementById('login-btn');
+const signupBtn = document.getElementById('signup-btn');
+
+loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => showAlert(err.message, "Login Failed")));
+signupBtn.addEventListener('click', () => createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => showAlert(err.message, "Signup Failed")));
+
+authForm.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        // Trigger the visible button
+        if (!loginBtn.classList.contains('hidden')) {
+            loginBtn.click();
+        } else {
+            signupBtn.click();
+        }
+    }
+});
+
 document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
 document.getElementById('toggle-auth').addEventListener('click', e => {
     e.preventDefault();
-    document.getElementById('login-btn').classList.toggle('hidden');
-    document.getElementById('signup-btn').classList.toggle('hidden');
-    document.getElementById('auth-title').textContent = document.getElementById('login-btn').classList.contains('hidden') ? 'Sign Up' : 'Login';
-    e.target.textContent = document.getElementById('login-btn').classList.contains('hidden') ? 'Have an account? Login' : 'Need an account? Sign Up';
+    loginBtn.classList.toggle('hidden');
+    signupBtn.classList.toggle('hidden');
+    document.getElementById('auth-title').textContent = loginBtn.classList.contains('hidden') ? 'Sign Up' : 'Login';
+    e.target.textContent = loginBtn.classList.contains('hidden') ? 'Have an account? Login' : 'Need an account? Sign Up';
 });
 
 // --- DATABASE COLLECTIONS ---
