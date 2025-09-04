@@ -73,3 +73,9 @@ body {
     }
 }
 
+/* Chart container styling */
+.chart-container {
+    position: relative;
+    height: 300px; /* Or any desired height */
+}
+

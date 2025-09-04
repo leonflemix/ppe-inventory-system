@@ -16,7 +16,8 @@ import {
     query,
     where,
     getDocs,
-    getDoc
+    getDoc,
+    Timestamp
 } from './firebase.js';
 
 // --- ADMIN CONFIGURATION ---
@@ -36,10 +37,11 @@ const toastContainer = document.getElementById('toast-container');
 let currentInventory = [];
 let currentEmployees = [];
 let currentMachines = [];
-let currentReportData = []; // To store data for CSV export
+let currentUsageLogs = [];
 let currentUserIsAdmin = false;
 let activeReport = { type: null, id: null, data: [] };
 let sortState = { key: 'name', order: 'asc' };
+let topUsedItemsChart, itemsByCategoryChart, usageTrendChart;
 
 
 // --- MODAL & TOAST UTILITIES ---
@@ -83,7 +85,6 @@ function showToast(message, type = 'success') {
     toastContainer.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
 }
-
 
 alertOkBtn.addEventListener('click', () => hideModal(alertModal));
 confirmCancelBtn.addEventListener('click', () => {
@@ -134,6 +135,7 @@ onAuthStateChanged(auth, (user) => {
         listenForInventoryUpdates();
         listenForEmployeeUpdates();
         listenForMachineUpdates();
+        listenForUsageLogUpdates(); // New listener for charts
     } else {
         currentUserIsAdmin = false;
         mainApp.classList.add('hidden');
@@ -165,25 +167,134 @@ const machinesCollection = collection(db, 'machines');
 function listenForInventoryUpdates() {
     onSnapshot(inventoryCollection, (snapshot) => {
         currentInventory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderInventoryTable(currentInventory);
+        renderInventoryTable();
         updateDashboardCards(currentInventory);
+        updateDashboardCharts();
         populateItemReportDropdown();
     });
 }
 function listenForEmployeeUpdates() {
     onSnapshot(employeesCollection, (snapshot) => {
         currentEmployees = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderEmployeesTable(currentEmployees);
+        renderEmployeesTable();
         populateEmployeeDropdowns();
     });
 }
 function listenForMachineUpdates() {
     onSnapshot(machinesCollection, (snapshot) => {
         currentMachines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        renderMachinesTable(currentMachines);
+        renderMachinesTable();
         populateMachineDropdowns();
     });
 }
+function listenForUsageLogUpdates() {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const q = query(usageLogCollection, where("timestamp", ">=", Timestamp.fromDate(thirtyDaysAgo)));
+
+    onSnapshot(q, (snapshot) => {
+        currentUsageLogs = snapshot.docs.map(doc => doc.data());
+        updateDashboardCharts();
+    });
+}
+
+
+// --- CHARTING LOGIC ---
+function updateDashboardCharts() {
+    // Top 5 Most Used Items
+    const itemUsage = currentUsageLogs.reduce((acc, log) => {
+        acc[log.itemName] = (acc[log.itemName] || 0) + log.quantityUsed;
+        return acc;
+    }, {});
+    const sortedItems = Object.entries(itemUsage)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5);
+    
+    renderBarChart('top-used-items-chart', sortedItems.map(item => item[0]), sortedItems.map(item => item[1]));
+
+    // Items by Category
+    const categoryCounts = currentInventory.reduce((acc, item) => {
+        acc[item.category] = (acc[item.category] || 0) + 1;
+        return acc;
+    }, {});
+    renderPieChart('items-by-category-chart', Object.keys(categoryCounts), Object.values(categoryCounts));
+}
+
+function renderBarChart(canvasId, labels, data) {
+    if (topUsedItemsChart) topUsedItemsChart.destroy();
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    topUsedItemsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Quantity Used',
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function renderPieChart(canvasId, labels, data) {
+    if (itemsByCategoryChart) itemsByCategoryChart.destroy();
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    itemsByCategoryChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+        }
+    });
+}
+
+function renderUsageTrendChart(docs) {
+    if (usageTrendChart) usageTrendChart.destroy();
+
+    const usageByDate = docs.reduce((acc, doc) => {
+        const date = doc.data().timestamp.toDate().toLocaleDateString();
+        acc[date] = (acc[date] || 0) + doc.data().quantityUsed;
+        return acc;
+    }, {});
+
+    const sortedDates = Object.keys(usageByDate).sort((a, b) => new Date(a) - new Date(b));
+    const chartData = sortedDates.map(date => usageByDate[date]);
+
+    const ctx = document.getElementById('usage-trend-chart').getContext('2d');
+    usageTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: sortedDates,
+            datasets: [{
+                label: 'Quantity Used Per Day',
+                data: chartData,
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
 
 // --- Generic Search & Sort ---
 function applySearch(data, searchTerm, key = 'name') {
@@ -213,7 +324,6 @@ function setupTableSorting(tableElement) {
 
         sortState = { key, order: currentOrder };
 
-        // Re-render the appropriate table
         if (tableElement.querySelector('tbody').id === 'inventory-table-body') renderInventoryTable();
         if (tableElement.querySelector('tbody').id === 'employees-table-body') renderEmployeesTable();
         if (tableElement.querySelector('tbody').id === 'machines-table-body') renderMachinesTable();
@@ -229,7 +339,7 @@ setupTableSorting(document.querySelector('#machines-table-body').closest('table'
 document.getElementById('employee-search').addEventListener('input', (e) => renderEmployeesTable(null, e.target.value));
 document.getElementById('add-employee-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('employee-name-input'); const name = input.value.trim(); if (name) { await addDoc(employeesCollection, { name }); input.value = ''; showToast('Employee added successfully!'); } });
 function renderEmployeesTable(employees = currentEmployees, searchTerm = '') {
-    const filtered = applySearch(employees, searchTerm);
+    const filtered = applySearch(employees, searchTerm || document.getElementById('employee-search').value);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     const tableBody = document.getElementById('employees-table-body');
     tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No employees found.</td></tr>' : sorted.map(emp => `
@@ -256,7 +366,7 @@ document.getElementById('cancel-edit-employee-btn').addEventListener('click', ()
 document.getElementById('machine-search').addEventListener('input', (e) => renderMachinesTable(null, e.target.value));
 document.getElementById('add-machine-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('machine-name-input'); const name = input.value.trim(); if (name) { await addDoc(machinesCollection, { name }); input.value = ''; showToast('Machine added successfully!'); } });
 function renderMachinesTable(machines = currentMachines, searchTerm = '') {
-    const filtered = applySearch(machines, searchTerm);
+    const filtered = applySearch(machines, searchTerm || document.getElementById('machine-search').value);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     const tableBody = document.getElementById('machines-table-body');
     tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No machines found.</td></tr>' : sorted.map(m => `
@@ -284,7 +394,7 @@ document.getElementById('cancel-edit-machine-btn').addEventListener('click', () 
 document.getElementById('inventory-search').addEventListener('input', (e) => renderInventoryTable(null, e.target.value));
 function renderInventoryTable(inventory = currentInventory, searchTerm = '') {
     const withTotal = inventory.map(item => ({...item, totalStock: item.location1 + item.location2}));
-    const filtered = applySearch(withTotal, searchTerm);
+    const filtered = applySearch(withTotal, searchTerm || document.getElementById('inventory-search').value);
     const sorted = applySort(filtered, sortState.key, sortState.order);
     
     const tableBody = document.getElementById('inventory-table-body');
@@ -423,13 +533,27 @@ document.getElementById('report-machine-select').addEventListener('change', (e) 
 
 async function fetchAndRenderItemReport(itemId) {
     const btn = document.getElementById('export-item-report-btn');
+    const chartContainer = document.getElementById('usage-trend-chart-container');
     activeReport = { type: 'item', id: itemId, data: [] };
     const tableBody = document.getElementById('item-report-table-body');
-    if (!itemId) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item.</td></tr>`; btn.disabled = true; return; }
+    if (!itemId) { 
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item.</td></tr>`; 
+        btn.disabled = true; 
+        chartContainer.classList.add('hidden');
+        return; 
+    }
     const q = query(usageLogCollection, where("itemId", "==", itemId));
     const snapshot = await getDocs(q);
     activeReport.data = snapshot.docs.map(d => d.data());
     btn.disabled = activeReport.data.length === 0;
+    
+    if(snapshot.docs.length > 0) {
+        chartContainer.classList.remove('hidden');
+        renderUsageTrendChart(snapshot.docs);
+    } else {
+        chartContainer.classList.add('hidden');
+    }
+
     renderReportTable(tableBody, snapshot.docs, 'item');
 }
 async function fetchAndRenderEmployeeReport(employeeId) {
@@ -473,6 +597,8 @@ function renderReportTable(tableBody, docs, reportType) {
 
     if (docs.length === 0) { tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center p-8 text-gray-500">No records found.</td></tr>`; return; }
     
+    docs.sort((a,b) => b.data().timestamp.toDate() - a.data().timestamp.toDate());
+
     tableBody.innerHTML = docs.map(doc => {
         const data = doc.data();
         const date = data.timestamp.toDate().toLocaleString();
