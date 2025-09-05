@@ -131,41 +131,44 @@ sidebarToggle.addEventListener('click', () => {
 });
 
 reportsView.addEventListener('click', (e) => {
-    const buttonTarget = e.target.closest('button.chart-toggle-btn');
-    if (!buttonTarget) return;
-
-    const chartBodyId = buttonTarget.dataset.chart;
-    const chartBody = document.getElementById(chartBodyId);
-    const icon = buttonTarget.querySelector('i');
-    if (chartBody) {
-        chartBody.classList.toggle('hidden');
-        icon.classList.toggle('fa-chevron-down', chartBody.classList.contains('hidden'));
-        icon.classList.toggle('fa-chevron-up', !chartBody.classList.contains('hidden'));
-    }
-});
-
-document.getElementById('item-report-table-body').addEventListener('click', (e) => {
     const target = e.target.closest('button');
-    if (!target || currentUserRole === 'user') return;
-    const logId = target.dataset.id;
-    if (target.classList.contains('delete-log-btn')) {
-        showConfirm('Are you sure you want to delete this usage record? This action cannot be undone and will NOT return stock to inventory.', async () => {
-            await deleteDoc(doc(db, 'usageLog', logId));
-            refreshActiveReport();
-            showToast('Log entry deleted.', 'success');
-        });
-    } else if (target.classList.contains('edit-log-btn')) {
-        getDoc(doc(db, 'usageLog', logId)).then(logDoc => {
-            if (logDoc.exists()) {
-                const data = logDoc.data();
-                document.getElementById('edit-log-id').value = logId;
-                document.getElementById('edit-log-item-name').textContent = data.itemName;
-                document.getElementById('edit-log-employee-select').value = data.employeeId;
-                document.getElementById('edit-log-quantity').value = data.quantityUsed;
-                document.getElementById('edit-log-location').value = data.location;
-                showModal(document.getElementById('edit-log-modal'));
-            }
-        });
+    if (!target) return;
+
+    // Handle chart toggles
+    if (target.classList.contains('chart-toggle-btn')) {
+        const chartBodyId = target.dataset.chart;
+        const chartBody = document.getElementById(chartBodyId);
+        const icon = target.querySelector('i');
+        if (chartBody) {
+            chartBody.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-down', chartBody.classList.contains('hidden'));
+            icon.classList.toggle('fa-chevron-up', !chartBody.classList.contains('hidden'));
+        }
+        return;
+    }
+
+    // Handle edit/delete actions for admins/managers
+    if (currentUserRole !== 'user') {
+        const logId = target.dataset.id;
+        if (target.classList.contains('delete-log-btn')) {
+            showConfirm('Are you sure you want to delete this usage record? This action cannot be undone and will NOT return stock to inventory.', async () => {
+                await deleteDoc(doc(db, 'usageLog', logId));
+                refreshActiveReport();
+                showToast('Log entry deleted.', 'success');
+            });
+        } else if (target.classList.contains('edit-log-btn')) {
+            getDoc(doc(db, 'usageLog', logId)).then(logDoc => {
+                if (logDoc.exists()) {
+                    const data = logDoc.data();
+                    document.getElementById('edit-log-id').value = logId;
+                    document.getElementById('edit-log-item-name').textContent = data.itemName;
+                    document.getElementById('edit-log-employee-select').value = data.employeeId;
+                    document.getElementById('edit-log-quantity').value = data.quantityUsed;
+                    document.getElementById('edit-log-location').value = data.location;
+                    showModal(document.getElementById('edit-log-modal'));
+                }
+            });
+        }
     }
 });
 
@@ -311,15 +314,10 @@ document.getElementById('add-user-form').addEventListener('submit', (e) => {
 
     showConfirm("Creating a new user through this panel will log you out temporarily. You will need to log back in with your admin account to continue. Proceed?", async () => {
         try {
-            // NOTE: The Firebase Auth SDK for clients (browsers) automatically signs in a user upon creation.
-            // This is a known behavior. A more robust solution for admin panels involves Cloud Functions
-            // to create users without affecting the admin's session, but that is beyond the scope of this client-side app.
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await setDoc(doc(db, 'users', user.uid), { email, role });
 
-            // After creation, Firebase signs in the new user, which logs the admin out.
-            // We can't prevent this on the client-side, so we just inform the admin.
             showAlert('User created successfully. You have been logged out. Please log back in.', 'Action Required');
             e.target.reset();
         } catch (error) {
@@ -421,7 +419,43 @@ document.getElementById('report-machine-select').addEventListener('change', fetc
 async function fetchAndRenderItemReport() { activeReport.type = 'item'; const itemId = document.getElementById('report-item-select').value; const btn = document.getElementById('export-item-report-btn'); const tableBody = document.getElementById('item-report-table-body'); if (!itemId) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr>`; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("itemId", "==", itemId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), employee: data.employeeName, machine: data.machineName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy, notes: data.notes }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'item'); }
 async function fetchAndRenderEmployeeReport() { activeReport.type = 'employee'; const employeeId = document.getElementById('report-employee-select').value; const btn = document.getElementById('export-employee-report-btn'); const tableBody = document.getElementById('employee-report-table-body'); if (!employeeId) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("employeeId", "==", employeeId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), item: data.itemName, machine: data.machineName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'employee'); }
 async function fetchAndRenderMachineReport() { activeReport.type = 'machine'; const machineId = document.getElementById('report-machine-select').value; const btn = document.getElementById('export-machine-report-btn'); const tableBody = document.getElementById('machine-report-table-body'); if (!machineId) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("machineId", "==", machineId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), item: data.itemName, employee: data.employeeName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'machine'); }
-function renderReportTable(tableBody, docs, reportType) { const colCount = currentUserRole !== 'user' && reportType === 'item' ? 7 : 6; const showActions = currentUserRole !== 'user' && reportType === 'item'; let headers = `<th class="px-6 py-3">Date</th><th class="px-6 py-3">${reportType === 'item' ? 'Employee' : 'PPE Item'}</th><th class="px-6 py-3">${reportType === 'machine' ? 'Employee' : (reportType === 'employee' ? 'Machine' : 'Machine')}</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th>${showActions ? '<th class="px-6 py-3">Actions</th>' : ''}`; tableBody.parentElement.querySelector('thead tr').innerHTML = headers; if (docs.length === 0) { tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center p-8 text-gray-500">No records found.</td></tr>`; return; } docs.sort((a,b) => b.data().timestamp.toDate() - a.data().timestamp.toDate()); tableBody.innerHTML = docs.map(doc => { const data = doc.data(); const date = data.timestamp.toDate().toLocaleString(); const actions = showActions ? `<td class="px-6 py-4 text-center space-x-2"><button class="edit-log-btn text-blue-600" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="delete-log-btn text-red-600" data-id="${doc.id}"><i class="fas fa-trash"></i></button></td>` : ''; let mainCol1, mainCol2; if (reportType === 'item') { mainCol1 = data.employeeName; mainCol2 = data.machineName; } else if (reportType === 'employee') { mainCol1 = data.itemName; mainCol2 = data.machineName; } else if (reportType === 'machine') { mainCol1 = data.itemName; mainCol2 = data.employeeName; } return `<tr class="bg-white border-b"><td class="px-6 py-4">${date}</td><td class="px-6 py-4">${mainCol1}</td><td class="px-6 py-4">${mainCol2 || 'N/A'}</td><td class="px-6 py-4">${data.quantityUsed}</td><td class="px-6 py-4">${data.location}</td><td class="px-6 py-4">${data.loggedBy}</td>${actions || ''}</tr>`; }).join(''); }
+function renderReportTable(tableBody, docs, reportType) {
+    const showActions = currentUserRole !== 'user';
+    const colCount = showActions ? 7 : 6;
+    let headers = `
+        <th class="px-6 py-3">Date</th>
+        <th class="px-6 py-3">${reportType === 'item' ? 'Employee' : 'PPE Item'}</th>
+        <th class="px-6 py-3">${reportType === 'machine' ? 'Employee' : (reportType === 'employee' ? 'Machine' : 'Machine')}</th>
+        <th class="px-6 py-3">Quantity</th>
+        <th class="px-6 py-3">Location</th>
+        <th class="px-6 py-3">Logged By</th>
+        ${showActions ? '<th class="px-6 py-3">Actions</th>' : ''}
+    `;
+    tableBody.parentElement.querySelector('thead tr').innerHTML = headers;
+    if (docs.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center p-8 text-gray-500">No records found.</td></tr>`;
+        return;
+    }
+    docs.sort((a, b) => b.data().timestamp.toDate() - a.data().timestamp.toDate());
+    tableBody.innerHTML = docs.map(doc => {
+        const data = doc.data();
+        const date = data.timestamp.toDate().toLocaleString();
+        const actions = showActions ? `<td class="px-6 py-4 text-center space-x-2"><button class="edit-log-btn text-blue-600" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="delete-log-btn text-red-600" data-id="${doc.id}"><i class="fas fa-trash"></i></button></td>` : '';
+        let mainCol1, mainCol2;
+        if (reportType === 'item') { mainCol1 = data.employeeName; mainCol2 = data.machineName; }
+        else if (reportType === 'employee') { mainCol1 = data.itemName; mainCol2 = data.machineName; }
+        else if (reportType === 'machine') { mainCol1 = data.itemName; mainCol2 = data.employeeName; }
+        return `<tr class="bg-white border-b">
+            <td class="px-6 py-4">${date}</td>
+            <td class="px-6 py-4">${mainCol1}</td>
+            <td class="px-6 py-4">${mainCol2 || 'N/A'}</td>
+            <td class="px-6 py-4">${data.quantityUsed}</td>
+            <td class="px-6 py-4">${data.location}</td>
+            <td class="px-6 py-4">${data.loggedBy}</td>
+            ${actions || ''}
+        </tr>`;
+    }).join('');
+}
 document.getElementById('edit-log-form').addEventListener('submit', async (e) => { e.preventDefault(); const logId = document.getElementById('edit-log-id').value; const employeeSelect = document.getElementById('edit-log-employee-select'); const updatedData = { employeeId: employeeSelect.value, employeeName: employeeSelect.options[employeeSelect.selectedIndex].text, quantityUsed: parseInt(document.getElementById('edit-log-quantity').value), location: document.getElementById('edit-log-location').value }; await updateDoc(doc(db, 'usageLog', logId), updatedData); hideModal(document.getElementById('edit-log-modal')); refreshActiveReport(); showToast('Log entry updated!'); });
 function refreshActiveReport() { if (activeReport.type === 'item') fetchAndRenderItemReport(); else if (activeReport.type === 'employee') fetchAndRenderEmployeeReport(); else if (activeReport.type === 'machine') fetchAndRenderMachineReport(); }
 
