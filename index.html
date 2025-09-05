@@ -110,31 +110,6 @@
                            <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-yellow-100 text-yellow-600 p-4 rounded-full mr-4"><i class="fas fa-exclamation-triangle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Low Stock Items</p><p id="low-stock-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
                            <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-red-100 text-red-600 p-4 rounded-full mr-4"><i class="fas fa-times-circle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Out of Stock Items</p><p id="out-of-stock-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
                         </div>
-                        <!-- Charts -->
-                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-semibold text-gray-700">Top 5 Most Used Items (Last 30 Days)</h3>
-                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="top-used-items-chart-body">
-                                        <i class="fas fa-chevron-down"></i>
-                                    </button>
-                                </div>
-                                <div id="top-used-items-chart-body" class="chart-container hidden">
-                                    <canvas id="top-used-items-chart"></canvas>
-                                </div>
-                            </div>
-                            <div class="bg-white rounded-xl shadow-md p-6">
-                                <div class="flex justify-between items-center mb-4">
-                                    <h3 class="text-lg font-semibold text-gray-700">Items by Category</h3>
-                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="items-by-category-chart-body">
-                                        <i class="fas fa-chevron-down"></i>
-                                    </button>
-                                </div>
-                                <div id="items-by-category-chart-body" class="chart-container hidden">
-                                    <canvas id="items-by-category-chart"></canvas>
-                                </div>
-                            </div>
-                        </div>
                         <!-- Inventory Table -->
                         <div class="bg-white rounded-xl shadow-md p-6">
                             <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
@@ -151,14 +126,15 @@
                     <!-- Purchases View -->
                     <div id="purchases-view" class="hidden">
                          <div class="bg-white rounded-xl shadow-md p-6">
-                            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                            <div class="flex justify-between items-center mb-4">
                                 <h2 class="text-xl font-bold text-gray-700">Purchase History</h2>
-                                <div id="purchases-filter-container" class="flex flex-wrap items-center gap-4">
-                                    <input type="text" id="purchase-search" placeholder="Search by item..." class="p-2 border rounded-lg">
-                                    <select id="supplier-filter" class="p-2 border rounded-lg">
-                                        <option value="">All Suppliers</option>
-                                    </select>
-                                </div>
+                                <button id="export-purchases-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                            <div id="purchases-filter-container" class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <input type="text" id="purchase-search" placeholder="Search by item..." class="p-2 border rounded-lg">
+                                <select id="supplier-filter" class="p-2 border rounded-lg">
+                                    <option value="">All Suppliers</option>
+                                </select>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left text-gray-500">
@@ -205,6 +181,31 @@
                            <div class="flex items-center space-x-4 mb-4"><label for="report-machine-select" class="font-semibold">Machine Name:</label><select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select></div>
                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
                        </div>
+                        <!-- Charts -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-700">Top 5 Most Used Items (Last 30 Days)</h3>
+                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="top-used-items-chart-body">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div id="top-used-items-chart-body" class="chart-container hidden">
+                                    <canvas id="top-used-items-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-md p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-700">Items by Category</h3>
+                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="items-by-category-chart-body">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div id="items-by-category-chart-body" class="chart-container hidden">
+                                    <canvas id="items-by-category-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- Employees View -->
                     <div id="employees-view" class="hidden space-y-8">

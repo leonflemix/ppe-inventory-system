@@ -46,6 +46,7 @@ let currentMachines = [];
 let currentSuppliers = [];
 let currentUsageLogs = [];
 let currentPurchases = [];
+let filteredPurchases = [];
 let currentUserIsAdmin = false;
 let activeReport = { type: null, data: [] };
 let sortState = { key: 'name', order: 'asc' };
@@ -121,22 +122,44 @@ sidebarToggle.addEventListener('click', () => {
     appContainer.classList.toggle('sidebar-collapsed');
 });
 
-dashboardView.addEventListener('click', (e) => {
-    const toggleBtn = e.target.closest('.chart-toggle-btn');
-    if (!toggleBtn) return;
+reportsView.addEventListener('click', (e) => {
+    const buttonTarget = e.target.closest('button');
+    if (!buttonTarget) return;
 
-    const chartBodyId = toggleBtn.dataset.chart;
-    const chartBody = document.getElementById(chartBodyId);
-    const icon = toggleBtn.querySelector('i');
+    // Handle chart toggles
+    if (buttonTarget.classList.contains('chart-toggle-btn')) {
+        const chartBodyId = buttonTarget.dataset.chart;
+        const chartBody = document.getElementById(chartBodyId);
+        const icon = buttonTarget.querySelector('i');
+        if (chartBody) {
+            chartBody.classList.toggle('hidden');
+            icon.classList.toggle('fa-chevron-down', chartBody.classList.contains('hidden'));
+            icon.classList.toggle('fa-chevron-up', !chartBody.classList.contains('hidden'));
+        }
+        return;
+    }
 
-    if (chartBody) {
-        chartBody.classList.toggle('hidden');
-        if (chartBody.classList.contains('hidden')) {
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-        } else {
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
+    // Handle existing log edit/delete logic
+    if (currentUserIsAdmin) {
+        const logId = buttonTarget.dataset.id;
+        if (buttonTarget.classList.contains('delete-log-btn')) {
+            showConfirm('Are you sure you want to delete this usage record? This action cannot be undone and will NOT return stock to inventory.', async () => {
+                await deleteDoc(doc(db, 'usageLog', logId));
+                refreshActiveReport();
+                showToast('Log entry deleted.', 'success');
+            });
+        } else if (buttonTarget.classList.contains('edit-log-btn')) {
+            getDoc(doc(db, 'usageLog', logId)).then(logDoc => {
+                if (logDoc.exists()) {
+                    const data = logDoc.data();
+                    document.getElementById('edit-log-id').value = logId;
+                    document.getElementById('edit-log-item-name').textContent = data.itemName;
+                    document.getElementById('edit-log-employee-select').value = data.employeeId;
+                    document.getElementById('edit-log-quantity').value = data.quantityUsed;
+                    document.getElementById('edit-log-location').value = data.location;
+                    showModal(document.getElementById('edit-log-modal'));
+                }
+            });
         }
     }
 });
@@ -633,7 +656,10 @@ function renderPurchasesTable() {
         filtered = filtered.filter(p => p.supplierId === supplierId);
     }
     
-    const sorted = applySort(filtered, sortState.key, sortState.order);
+    filteredPurchases = filtered;
+    document.getElementById('export-purchases-btn').disabled = filteredPurchases.length === 0;
+
+    const sorted = applySort(filteredPurchases, sortState.key, sortState.order);
 
     const tableBody = document.getElementById('purchases-table-body');
     if (sorted.length === 0) {
@@ -719,6 +745,19 @@ function exportToCsv(filename, data) {
 document.getElementById('export-item-report-btn').addEventListener('click', () => exportToCsv(`item-report.csv`, activeReport.data));
 document.getElementById('export-employee-report-btn').addEventListener('click', () => exportToCsv(`employee-report.csv`, activeReport.data));
 document.getElementById('export-machine-report-btn').addEventListener('click', () => exportToCsv(`machine-report.csv`, activeReport.data));
+document.getElementById('export-purchases-btn').addEventListener('click', () => {
+    const dataToExport = filteredPurchases.map(p => ({
+        purchaseDate: p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A',
+        itemName: p.itemName,
+        quantity: p.quantity,
+        totalCost: p.totalCost || 'N/A',
+        supplier: p.supplier || 'N/A',
+        restockedTo: p.restockLocation === 'location1' ? 'Location 1' : 'Location 2',
+        loggedBy: p.loggedBy
+    }));
+    exportToCsv('purchases-report.csv', dataToExport);
+});
+
 
 // --- Report Filters Listeners ---
 document.getElementById('report-item-select').addEventListener('change', fetchAndRenderItemReport);
@@ -853,29 +892,7 @@ function renderReportTable(tableBody, docs, reportType) {
     }).join('');
 }
 
-reportsView.addEventListener('click', async (e) => {
-    const target = e.target.closest('button');
-    if (!target || !currentUserIsAdmin) return;
-    const logId = target.dataset.id;
-    if (target.classList.contains('delete-log-btn')) {
-        showConfirm('Are you sure you want to delete this usage record? This action cannot be undone and will NOT return stock to inventory.', async () => {
-            await deleteDoc(doc(db, 'usageLog', logId));
-            refreshActiveReport();
-            showToast('Log entry deleted.', 'success');
-        });
-    } else if (target.classList.contains('edit-log-btn')) {
-        const logDoc = await getDoc(doc(db, 'usageLog', logId));
-        if (logDoc.exists()) {
-            const data = logDoc.data();
-            document.getElementById('edit-log-id').value = logId;
-            document.getElementById('edit-log-item-name').textContent = data.itemName;
-            document.getElementById('edit-log-employee-select').value = data.employeeId;
-            document.getElementById('edit-log-quantity').value = data.quantityUsed;
-            document.getElementById('edit-log-location').value = data.location;
-            showModal(document.getElementById('edit-log-modal'));
-        }
-    }
-});
+
 
 document.getElementById('edit-log-form').addEventListener('submit', async (e) => {
     e.preventDefault();
