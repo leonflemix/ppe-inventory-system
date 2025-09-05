@@ -656,36 +656,17 @@ document.getElementById('restock-form').addEventListener('submit', async (e) => 
 // --- PURCHASES VIEW ---
 const purchaseFilters = document.getElementById('purchases-filter-container');
 purchaseFilters.addEventListener('input', () => renderPurchasesTable());
-document.getElementById('reset-filters-btn').addEventListener('click', () => {
-    document.getElementById('purchase-search').value = '';
-    document.getElementById('supplier-filter').value = '';
-    document.getElementById('start-date-filter').value = '';
-    document.getElementById('end-date-filter').value = '';
-    renderPurchasesTable();
-});
 
 function renderPurchasesTable() {
     const searchTerm = document.getElementById('purchase-search').value;
     const supplierId = document.getElementById('supplier-filter').value;
-    const startDate = document.getElementById('start-date-filter').value;
-    const endDate = document.getElementById('end-date-filter').value;
 
     let filtered = applySearch(currentPurchases, searchTerm, 'itemName');
     
     if (supplierId) {
         filtered = filtered.filter(p => p.supplierId === supplierId);
     }
-    if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0); // Set to start of the day
-        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() >= start);
-    }
-    if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999); // Set to end of the day
-        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() <= end);
-    }
-
+    
     const sorted = applySort(filtered, sortState.key, sortState.order);
 
     const tableBody = document.getElementById('purchases-table-body');
@@ -775,42 +756,14 @@ document.getElementById('export-machine-report-btn').addEventListener('click', (
 
 // --- Report Filters Listeners ---
 document.getElementById('report-item-select').addEventListener('change', fetchAndRenderItemReport);
-document.getElementById('item-report-start-date').addEventListener('input', fetchAndRenderItemReport);
-document.getElementById('item-report-end-date').addEventListener('input', fetchAndRenderItemReport);
-document.getElementById('item-report-reset-btn').addEventListener('click', () => {
-    document.getElementById('report-item-select').value = '';
-    document.getElementById('item-report-start-date').value = '';
-    document.getElementById('item-report-end-date').value = '';
-    fetchAndRenderItemReport();
-});
-
 document.getElementById('report-employee-select').addEventListener('change', fetchAndRenderEmployeeReport);
-document.getElementById('employee-report-start-date').addEventListener('input', fetchAndRenderEmployeeReport);
-document.getElementById('employee-report-end-date').addEventListener('input', fetchAndRenderEmployeeReport);
-document.getElementById('employee-report-reset-btn').addEventListener('click', () => {
-    document.getElementById('report-employee-select').value = '';
-    document.getElementById('employee-report-start-date').value = '';
-    document.getElementById('employee-report-end-date').value = '';
-    fetchAndRenderEmployeeReport();
-});
-
 document.getElementById('report-machine-select').addEventListener('change', fetchAndRenderMachineReport);
-document.getElementById('machine-report-start-date').addEventListener('input', fetchAndRenderMachineReport);
-document.getElementById('machine-report-end-date').addEventListener('input', fetchAndRenderMachineReport);
-document.getElementById('machine-report-reset-btn').addEventListener('click', () => {
-    document.getElementById('report-machine-select').value = '';
-    document.getElementById('machine-report-start-date').value = '';
-    document.getElementById('machine-report-end-date').value = '';
-    fetchAndRenderMachineReport();
-});
 
 
 async function fetchAndRenderItemReport() {
     activeReport.type = 'item';
     const itemId = document.getElementById('report-item-select').value;
-    const startDate = document.getElementById('item-report-start-date').value;
-    const endDate = document.getElementById('item-report-end-date').value;
-
+    
     const btn = document.getElementById('export-item-report-btn');
     const chartContainer = document.getElementById('usage-trend-chart-container');
     const tableBody = document.getElementById('item-report-table-body');
@@ -823,19 +776,7 @@ async function fetchAndRenderItemReport() {
         return; 
     }
 
-    let constraints = [where("itemId", "==", itemId)];
-    if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
-    }
-    if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
-    }
-    
-    const q = query(usageLogCollection, ...constraints);
+    const q = query(usageLogCollection, where("itemId", "==", itemId));
     const snapshot = await getDocs(q);
     activeReport.data = snapshot.docs.map(d => {
         const data = d.data();
@@ -864,8 +805,6 @@ async function fetchAndRenderItemReport() {
 async function fetchAndRenderEmployeeReport() {
     activeReport.type = 'employee';
     const employeeId = document.getElementById('report-employee-select').value;
-    const startDate = document.getElementById('employee-report-start-date').value;
-    const endDate = document.getElementById('employee-report-end-date').value;
     
     const btn = document.getElementById('export-employee-report-btn');
     const tableBody = document.getElementById('employee-report-table-body');
@@ -876,19 +815,7 @@ async function fetchAndRenderEmployeeReport() {
         return; 
     }
     
-    let constraints = [where("employeeId", "==", employeeId)];
-    if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
-    }
-    if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
-    }
-
-    const q = query(usageLogCollection, ...constraints);
+    const q = query(usageLogCollection, where("employeeId", "==", employeeId));
     const snapshot = await getDocs(q);
     activeReport.data = snapshot.docs.map(d => {
         const data = d.data();
@@ -908,8 +835,6 @@ async function fetchAndRenderEmployeeReport() {
 async function fetchAndRenderMachineReport() {
     activeReport.type = 'machine';
     const machineId = document.getElementById('report-machine-select').value;
-    const startDate = document.getElementById('machine-report-start-date').value;
-    const endDate = document.getElementById('machine-report-end-date').value;
 
     const btn = document.getElementById('export-machine-report-btn');
     const tableBody = document.getElementById('machine-report-table-body');
@@ -920,19 +845,7 @@ async function fetchAndRenderMachineReport() {
         return; 
     }
     
-    let constraints = [where("machineId", "==", machineId)];
-    if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
-    }
-    if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
-    }
-
-    const q = query(usageLogCollection, ...constraints);
+    const q = query(usageLogCollection, where("machineId", "==", machineId));
     const snapshot = await getDocs(q);
     activeReport.data = snapshot.docs.map(d => {
         const data = d.data();
