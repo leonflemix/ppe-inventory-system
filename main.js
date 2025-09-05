@@ -600,7 +600,7 @@ document.getElementById('use-item-form').addEventListener('submit', async (e) =>
             const currentStock = itemDoc.data()[location];
             if (currentStock < quantity) throw `Not enough stock. Available: ${currentStock}`;
             transaction.update(itemRef, { [location]: currentStock - quantity });
-            await addDoc(usageLogCollection, { loggedBy: auth.currentUser.email, employeeId, employeeName, machineId, machineName, itemId, itemName: itemDoc.data().name, quantityUsed: quantity, location, notes, timestamp: new Date() });
+            await addDoc(usageLogCollection, { loggedBy: auth.currentUser.email, employeeId, employeeName, machineId, machineName, itemId, itemName: itemDoc.data().name, quantityUsed: quantity, location, notes, timestamp: serverTimestamp() });
         });
         hideModal(document.getElementById('use-item-modal'));
         showToast('Usage recorded successfully!');
@@ -676,13 +676,14 @@ function renderPurchasesTable() {
         filtered = filtered.filter(p => p.supplierId === supplierId);
     }
     if (startDate) {
-        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() >= new Date(startDate));
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0); // Set to start of the day
+        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() >= start);
     }
     if (endDate) {
-        // Add 1 day to the end date to make it inclusive
         const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() < end);
+        end.setHours(23, 59, 59, 999); // Set to end of the day
+        filtered = filtered.filter(p => p.purchaseDate && p.purchaseDate.toDate() <= end);
     }
 
     const sorted = applySort(filtered, sortState.key, sortState.order);
@@ -823,11 +824,15 @@ async function fetchAndRenderItemReport() {
     }
 
     let constraints = [where("itemId", "==", itemId)];
-    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
+    }
     if (endDate) {
         const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+        end.setHours(23, 59, 59, 999);
+        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
     }
     
     const q = query(usageLogCollection, ...constraints);
@@ -872,11 +877,15 @@ async function fetchAndRenderEmployeeReport() {
     }
     
     let constraints = [where("employeeId", "==", employeeId)];
-    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
+    }
     if (endDate) {
         const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+        end.setHours(23, 59, 59, 999);
+        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
     }
 
     const q = query(usageLogCollection, ...constraints);
@@ -912,11 +921,15 @@ async function fetchAndRenderMachineReport() {
     }
     
     let constraints = [where("machineId", "==", machineId)];
-    if (startDate) constraints.push(where("timestamp", ">=", Timestamp.fromDate(new Date(startDate))));
+    if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        constraints.push(where("timestamp", ">=", Timestamp.fromDate(start)));
+    }
     if (endDate) {
         const end = new Date(endDate);
-        end.setDate(end.getDate() + 1);
-        constraints.push(where("timestamp", "<", Timestamp.fromDate(end)));
+        end.setHours(23, 59, 59, 999);
+        constraints.push(where("timestamp", "<=", Timestamp.fromDate(end)));
     }
 
     const q = query(usageLogCollection, ...constraints);
