@@ -55,7 +55,7 @@ let currentUsageLogs = [];
 let currentPurchases = [];
 let filteredPurchases = [];
 let currentUserRole = 'user'; // Default role
-let activeReport = { type: null, data: [] };
+let activeReport = { type: null, data: [], fullData: [] };
 let sortState = { key: 'name', order: 'asc' };
 let topUsedItemsChart, itemsByCategoryChart;
 
@@ -134,7 +134,6 @@ reportsView.addEventListener('click', (e) => {
     const target = e.target.closest('button');
     if (!target) return;
 
-    // Handle chart toggles
     if (target.classList.contains('chart-toggle-btn')) {
         const chartBodyId = target.dataset.chart;
         const chartBody = document.getElementById(chartBodyId);
@@ -147,7 +146,6 @@ reportsView.addEventListener('click', (e) => {
         return;
     }
 
-    // Handle edit/delete actions for admins/managers
     if (currentUserRole !== 'user') {
         const logId = target.dataset.id;
         if (target.classList.contains('delete-log-btn')) {
@@ -298,10 +296,10 @@ function listenForSupplierUpdates() { onSnapshot(suppliersCollection, (snapshot)
 function listenForPurchaseUpdates() { onSnapshot(purchasesCollection, (snapshot) => { currentPurchases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); renderPurchasesTable(); }); }
 function listenForUsersUpdates() { onSnapshot(usersCollection, (snapshot) => { allUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })); renderUsersTable(); }); }
 function listenForUsageLogUpdates() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const q = query(usageLogCollection, where("timestamp", ">=", Timestamp.fromDate(thirtyDaysAgo)));
-    onSnapshot(q, (snapshot) => { currentUsageLogs = snapshot.docs.map(doc => doc.data()); updateDashboardCharts(); });
+    onSnapshot(usageLogCollection, (snapshot) => {
+        currentUsageLogs = snapshot.docs.map(doc => doc.data());
+        updateDashboardCharts();
+    });
 }
 
 
@@ -413,12 +411,24 @@ document.getElementById('export-item-report-btn').addEventListener('click', () =
 document.getElementById('export-employee-report-btn').addEventListener('click', () => exportToCsv(`employee-report.csv`, activeReport.data));
 document.getElementById('export-machine-report-btn').addEventListener('click', () => exportToCsv(`machine-report.csv`, activeReport.data));
 document.getElementById('export-purchases-btn').addEventListener('click', () => { const dataToExport = filteredPurchases.map(p => ({ purchaseDate: p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A', itemName: p.itemName, quantity: p.quantity, totalCost: p.totalCost || 'N/A', supplier: p.supplier || 'N/A', restockedTo: p.restockLocation === 'location1' ? 'Location 1' : 'Location 2', loggedBy: p.loggedBy })); exportToCsv('purchases-report.csv', dataToExport); });
+
+document.getElementById('report-search').addEventListener('input', () => {
+    // Re-render the currently active report with the search term
+    if (activeReport.type === 'item') {
+        renderReportTable(document.getElementById('item-report-table-body'), activeReport.fullData, 'item');
+    } else if (activeReport.type === 'employee') {
+        renderReportTable(document.getElementById('employee-report-table-body'), activeReport.fullData, 'employee');
+    } else if (activeReport.type === 'machine') {
+        renderReportTable(document.getElementById('machine-report-table-body'), activeReport.fullData, 'machine');
+    }
+});
+
 document.getElementById('report-item-select').addEventListener('change', fetchAndRenderItemReport);
 document.getElementById('report-employee-select').addEventListener('change', fetchAndRenderEmployeeReport);
 document.getElementById('report-machine-select').addEventListener('change', fetchAndRenderMachineReport);
-async function fetchAndRenderItemReport() { activeReport.type = 'item'; const itemId = document.getElementById('report-item-select').value; const btn = document.getElementById('export-item-report-btn'); const tableBody = document.getElementById('item-report-table-body'); if (!itemId) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr>`; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("itemId", "==", itemId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), employee: data.employeeName, machine: data.machineName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy, notes: data.notes }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'item'); }
-async function fetchAndRenderEmployeeReport() { activeReport.type = 'employee'; const employeeId = document.getElementById('report-employee-select').value; const btn = document.getElementById('export-employee-report-btn'); const tableBody = document.getElementById('employee-report-table-body'); if (!employeeId) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("employeeId", "==", employeeId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), item: data.itemName, machine: data.machineName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'employee'); }
-async function fetchAndRenderMachineReport() { activeReport.type = 'machine'; const machineId = document.getElementById('report-machine-select').value; const btn = document.getElementById('export-machine-report-btn'); const tableBody = document.getElementById('machine-report-table-body'); if (!machineId) { tableBody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; return; } const q = query(usageLogCollection, where("machineId", "==", machineId)); const snapshot = await getDocs(q); activeReport.data = snapshot.docs.map(d => { const data = d.data(); return { date: data.timestamp.toDate().toLocaleString(), item: data.itemName, employee: data.employeeName, quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy }; }); btn.disabled = activeReport.data.length === 0; renderReportTable(tableBody, snapshot.docs, 'machine'); }
+async function fetchAndRenderItemReport() { activeReport.type = 'item'; const itemId = document.getElementById('report-item-select').value; const btn = document.getElementById('export-item-report-btn'); const tableBody = document.getElementById('item-report-table-body'); if (!itemId) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr>`; btn.disabled = true; activeReport.data = []; activeReport.fullData = []; return; } const q = query(usageLogCollection, where("itemId", "==", itemId)); const snapshot = await getDocs(q); activeReport.fullData = snapshot.docs; renderReportTable(tableBody, snapshot.docs, 'item'); }
+async function fetchAndRenderEmployeeReport() { activeReport.type = 'employee'; const employeeId = document.getElementById('report-employee-select').value; const btn = document.getElementById('export-employee-report-btn'); const tableBody = document.getElementById('employee-report-table-body'); if (!employeeId) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; activeReport.fullData = []; return; } const q = query(usageLogCollection, where("employeeId", "==", employeeId)); const snapshot = await getDocs(q); activeReport.fullData = snapshot.docs; renderReportTable(tableBody, snapshot.docs, 'employee'); }
+async function fetchAndRenderMachineReport() { activeReport.type = 'machine'; const machineId = document.getElementById('report-machine-select').value; const btn = document.getElementById('export-machine-report-btn'); const tableBody = document.getElementById('machine-report-table-body'); if (!machineId) { tableBody.innerHTML = '<tr><td colspan="7" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr>'; btn.disabled = true; activeReport.data = []; activeReport.fullData = []; return; } const q = query(usageLogCollection, where("machineId", "==", machineId)); const snapshot = await getDocs(q); activeReport.fullData = snapshot.docs; renderReportTable(tableBody, snapshot.docs, 'machine'); }
 function renderReportTable(tableBody, docs, reportType) {
     const showActions = currentUserRole !== 'user';
     const colCount = showActions ? 7 : 6;
@@ -432,12 +442,47 @@ function renderReportTable(tableBody, docs, reportType) {
         ${showActions ? '<th class="px-6 py-3">Actions</th>' : ''}
     `;
     tableBody.parentElement.querySelector('thead tr').innerHTML = headers;
-    if (docs.length === 0) {
+    
+    // Apply search filter
+    const searchTerm = document.getElementById('report-search').value.toLowerCase();
+    let filteredDocs = docs;
+    if (searchTerm) {
+        filteredDocs = docs.filter(doc => {
+            const data = doc.data();
+            const searchFields = [];
+            if (reportType === 'item') {
+                searchFields.push(data.employeeName, data.machineName);
+            } else if (reportType === 'employee') {
+                searchFields.push(data.itemName, data.machineName);
+            } else if (reportType === 'machine') {
+                searchFields.push(data.itemName, data.employeeName);
+            }
+            return searchFields.some(field => field && field.toLowerCase().includes(searchTerm));
+        });
+    }
+
+    if (filteredDocs.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center p-8 text-gray-500">No records found.</td></tr>`;
+        activeReport.data = []; // Clear export data
+        document.getElementById(`export-${reportType}-report-btn`).disabled = true;
         return;
     }
-    docs.sort((a, b) => b.data().timestamp.toDate() - a.data().timestamp.toDate());
-    tableBody.innerHTML = docs.map(doc => {
+
+    // Prepare data for CSV export
+    activeReport.data = filteredDocs.map(d => {
+        const data = d.data();
+        let exportData = { date: data.timestamp.toDate().toLocaleString() };
+        if (reportType === 'item') { Object.assign(exportData, { employee: data.employeeName, machine: data.machineName }); }
+        else if (reportType === 'employee') { Object.assign(exportData, { item: data.itemName, machine: data.machineName }); }
+        else if (reportType === 'machine') { Object.assign(exportData, { item: data.itemName, employee: data.employeeName }); }
+        Object.assign(exportData, { quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy });
+        return exportData;
+    });
+    document.getElementById(`export-${reportType}-report-btn`).disabled = false;
+
+
+    filteredDocs.sort((a, b) => b.data().timestamp.toDate() - a.data().timestamp.toDate());
+    tableBody.innerHTML = filteredDocs.map(doc => {
         const data = doc.data();
         const date = data.timestamp.toDate().toLocaleString();
         const actions = showActions ? `<td class="px-6 py-4 text-center space-x-2"><button class="edit-log-btn text-blue-600" data-id="${doc.id}"><i class="fas fa-edit"></i></button><button class="delete-log-btn text-red-600" data-id="${doc.id}"><i class="fas fa-trash"></i></button></td>` : '';
@@ -476,5 +521,103 @@ document.getElementById('cancel-edit-log-btn').addEventListener('click', () => h
 document.getElementById('cancel-generic-edit-btn').addEventListener('click', () => hideModal(document.getElementById('generic-edit-modal')));
 document.getElementById('cancel-restock-btn').addEventListener('click', () => hideModal(document.getElementById('restock-modal')));
 document.getElementById('add-item-btn').addEventListener('click', () => { document.getElementById('modal-title').textContent = 'Add New PPE Item'; document.getElementById('item-form').reset(); document.getElementById('item-id').value = ''; showModal(document.getElementById('item-modal')); });
-document.getElementById('item-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('item-id').value; const itemData = { name: document.getElementById('item-name').value, category: document.getElementById('item-category').value, location1: parseInt(document.getElementById('item-location1').value), location2: parseInt(document.getElementById('item-location2').value), lowStockThreshold: parseInt(document.getElementById('item-low-stock').value) }; if (id) { await updateDoc(doc(db, 'inventory', id), itemData); showToast('Item updated successfully!'); } else { await addDoc(inventoryCollection, itemData); showToast('Item added successfully!'); } hideModal(document.getElementById('item-modal')); });
+document.getElementById('item-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('item-id').value;
+    const itemData = {
+        name: document.getElementById('item-name').value,
+        category: document.getElementById('item-category').value,
+        location1: parseInt(document.getElementById('item-location1').value),
+        location2: parseInt(document.getElementById('item-location2').value),
+        lowStockThreshold: parseInt(document.getElementById('item-low-stock').value)
+    };
+
+    if (id) {
+        // This is an update, so we check for stock changes and log them.
+        const originalItem = currentInventory.find(i => i.id === id);
+        if (!originalItem) {
+            showAlert("Could not find the original item to compare stock levels.", "Update Error");
+            return;
+        }
+
+        const diff1 = itemData.location1 - originalItem.location1;
+        const diff2 = itemData.location2 - originalItem.location2;
+        const loggedInUserEmail = auth.currentUser.email;
+
+        // Create log entries for any stock adjustments
+        const logPromises = [];
+
+        if (diff1 !== 0) {
+            if (diff1 > 0) { // Positive adjustment (add to purchases)
+                logPromises.push(addDoc(purchasesCollection, {
+                    loggedBy: loggedInUserEmail,
+                    itemId: id,
+                    itemName: itemData.name,
+                    quantity: diff1,
+                    totalCost: 0,
+                    supplier: 'Admin Adjustment',
+                    supplierId: 'ADMIN_ADJUST',
+                    restockLocation: 'location1',
+                    purchaseDate: serverTimestamp()
+                }));
+            } else { // Negative adjustment (add to usage log)
+                logPromises.push(addDoc(usageLogCollection, {
+                    loggedBy: loggedInUserEmail,
+                    employeeId: 'ADMIN_ADJUST',
+                    employeeName: loggedInUserEmail,
+                    machineId: 'ADMIN_ADJUST',
+                    machineName: 'Admin Adjustment',
+                    itemId: id,
+                    itemName: itemData.name,
+                    quantityUsed: Math.abs(diff1),
+                    location: 'location1',
+                    notes: 'Manual stock adjustment by admin.',
+                    timestamp: serverTimestamp()
+                }));
+            }
+        }
+
+        if (diff2 !== 0) {
+            if (diff2 > 0) { // Positive adjustment
+                logPromises.push(addDoc(purchasesCollection, {
+                    loggedBy: loggedInUserEmail,
+                    itemId: id,
+                    itemName: itemData.name,
+                    quantity: diff2,
+                    totalCost: 0,
+                    supplier: 'Admin Adjustment',
+                    supplierId: 'ADMIN_ADJUST',
+                    restockLocation: 'location2',
+                    purchaseDate: serverTimestamp()
+                }));
+            } else { // Negative adjustment
+                logPromises.push(addDoc(usageLogCollection, {
+                    loggedBy: loggedInUserEmail,
+                    employeeId: 'ADMIN_ADJUST',
+                    employeeName: loggedInUserEmail,
+                    machineId: 'ADMIN_ADJUST',
+                    machineName: 'Admin Adjustment',
+                    itemId: id,
+                    itemName: itemData.name,
+                    quantityUsed: Math.abs(diff2),
+                    location: 'location2',
+                    notes: 'Manual stock adjustment by admin.',
+                    timestamp: serverTimestamp()
+                }));
+            }
+        }
+
+        // Wait for all logging to complete, then update the item.
+        await Promise.all(logPromises);
+        await updateDoc(doc(db, 'inventory', id), itemData);
+        showToast('Item updated successfully!');
+        
+    } else {
+        // This is a new item.
+        await addDoc(inventoryCollection, itemData);
+        showToast('Item added successfully!');
+    }
+    
+    hideModal(document.getElementById('item-modal'));
+});
 

@@ -65,19 +65,19 @@
                     <a href="#" id="nav-reports" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-chart-bar w-6 text-center"></i><span class="ml-3">Reports</span>
                     </a>
-                    <a href="#" id="nav-employees" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-employees" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-users w-6 text-center"></i><span class="ml-3">Employees</span>
                     </a>
-                     <a href="#" id="nav-machines" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                     <a href="#" id="nav-machines" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-cogs w-6 text-center"></i><span class="ml-3">Machines</span>
                     </a>
-                    <a href="#" id="nav-suppliers" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-suppliers" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-truck w-6 text-center"></i><span class="ml-3">Suppliers</span>
                     </a>
-                    <a href="#" id="nav-users" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-users" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-user-shield w-6 text-center"></i><span class="ml-3">Users</span>
                     </a>
-                    <a href="#" id="nav-table-manager" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-table-manager" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-database w-6 text-center"></i><span class="ml-3">Table Manager</span>
                     </a>
                 </nav>
@@ -95,7 +95,7 @@
                     <div class="flex items-center space-x-4">
                         <div class="text-right">
                             <p id="user-email" class="font-semibold text-gray-700">Not logged in</p>
-                            <p id="user-role-display" class="text-xs text-gray-500"></p>
+                             <p id="user-role-display" class="text-sm text-gray-500">Role: User</p>
                         </div>
                         <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300">
                             <i class="fas fa-sign-out-alt mr-2"></i>Logout
@@ -130,15 +130,15 @@
                     <!-- Purchases View -->
                     <div id="purchases-view" class="hidden">
                          <div class="bg-white rounded-xl shadow-md p-6">
-                            <div class="flex justify-between items-center mb-4">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                                 <h2 class="text-xl font-bold text-gray-700">Purchase History</h2>
-                                <button id="export-purchases-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
-                            </div>
-                            <div id="purchases-filter-container" class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
-                                <input type="text" id="purchase-search" placeholder="Search by item..." class="p-2 border rounded-lg">
-                                <select id="supplier-filter" class="p-2 border rounded-lg">
-                                    <option value="">All Suppliers</option>
-                                </select>
+                                <div id="purchases-filter-container" class="flex flex-wrap items-center gap-4">
+                                    <input type="text" id="purchase-search" placeholder="Search by item..." class="p-2 border rounded-lg">
+                                    <select id="supplier-filter" class="p-2 border rounded-lg">
+                                        <option value="">All Suppliers</option>
+                                    </select>
+                                    <button id="export-purchases-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                                </div>
                             </div>
                             <div class="overflow-x-auto">
                                 <table class="w-full text-sm text-left text-gray-500">
@@ -162,30 +162,40 @@
                     <!-- Reports View -->
                     <div id="reports-view" class="hidden space-y-8">
                         <div class="bg-white rounded-xl shadow-md p-6">
+                            <input type="text" id="report-search" placeholder="Search current report..." class="w-full p-3 mb-6 border rounded-lg"
+                                   aria-label="Search reports">
+                        </div>
+                         <div class="bg-white rounded-xl shadow-md p-6">
+                             <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Item Usage Report</h2>
+                                <button id="export-item-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="item-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
                             <div class="flex justify-between items-center mb-4">
-                               <h2 class="text-xl font-bold text-gray-700">Item Usage Report</h2>
-                               <button id="export-item-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
-                           </div>
-                           <div class="flex items-center space-x-4 mb-4"><label for="report-item-select" class="font-semibold">Select PPE Item:</label><select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select></div>
-                           <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th id="item-report-actions-header" class="px-6 py-3">Actions</th></tr></thead><tbody id="item-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr></tbody></table></div>
-                       </div>
-                       <div class="bg-white rounded-xl shadow-md p-6">
-                           <div class="flex justify-between items-center mb-4">
-                               <h2 class="text-xl font-bold text-gray-700">Employee PPE History</h2>
-                               <button id="export-employee-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
-                           </div>
-                           <div class="flex items-center space-x-4 mb-4"><label for="report-employee-select" class="font-semibold">Employee Name:</label><select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select></div>
-                           <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="employee-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr></tbody></table></div>
-                       </div>
-                       <div class="bg-white rounded-xl shadow-md p-6">
-                           <div class="flex justify-between items-center mb-4">
-                               <h2 class="text-xl font-bold text-gray-700">Machine Usage Report</h2>
-                               <button id="export-machine-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
-                           </div>
-                           <div class="flex items-center space-x-4 mb-4"><label for="report-machine-select" class="font-semibold">Machine Name:</label><select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select></div>
-                           <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="6" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
-                       </div>
-                        <!-- Charts -->
+                                <h2 class="text-xl font-bold text-gray-700">Employee PPE History</h2>
+                                <button id="export-employee-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="employee-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Machine Usage Report</h2>
+                                <button id="export-machine-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
+                        </div>
+                        <!-- Charts Section -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                             <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
                                 <div class="flex justify-between items-center mb-4">
@@ -253,18 +263,18 @@
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Supplier Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="suppliers-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading suppliers...</td></tr></tbody></table></div>
                         </div>
                     </div>
-                     <!-- Users View -->
+                    <!-- Users View -->
                     <div id="users-view" class="hidden space-y-8">
                         <div class="bg-white rounded-xl shadow-md p-6">
                              <h2 class="text-xl font-bold text-gray-700 mb-4">Add New User</h2>
-                             <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                 <div class="md:col-span-2">
-                                     <label for="new-user-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                     <input type="email" id="new-user-email" required class="w-full p-2 border rounded-lg" placeholder="user@example.com">
+                             <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                 <div>
+                                     <label for="new-user-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                     <input type="email" id="new-user-email" placeholder="user@example.com" class="w-full p-2 border rounded-lg" required>
                                  </div>
                                  <div>
                                      <label for="new-user-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                                     <input type="password" id="new-user-password" required class="w-full p-2 border rounded-lg" placeholder="••••••••">
+                                     <input type="password" id="new-user-password" placeholder="••••••••" class="w-full p-2 border rounded-lg" required>
                                  </div>
                                  <div>
                                      <label for="new-user-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -274,26 +284,14 @@
                                          <option value="admin">Admin</option>
                                      </select>
                                  </div>
-                                 <div class="md:col-start-4">
-                                     <button type="submit" class="w-full px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-user-plus mr-2"></i>Add User</button>
+                                 <div class="md:col-span-3">
+                                    <button type="submit" class="w-full md:w-auto px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-user-plus mr-2"></i>Add User</button>
                                  </div>
                              </form>
                         </div>
                         <div class="bg-white rounded-xl shadow-md p-6">
-                            <h2 class="text-xl font-bold text-gray-700 mb-4">Current Users</h2>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-sm text-left text-gray-500">
-                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
-                                        <tr>
-                                            <th class="px-6 py-3">User Email</th>
-                                            <th class="px-6 py-3">Role</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="users-table-body">
-                                        <tr><td colspan="2" class="text-center p-8 text-gray-500">Loading users...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Manage Users</h2>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">User Email</th><th class="px-6 py-3">Role</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
                         </div>
                     </div>
                     <!-- Table Manager View -->
@@ -305,9 +303,9 @@
                                 <button data-collection="employees" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Employees</button>
                                 <button data-collection="machines" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Machines</button>
                                 <button data-collection="suppliers" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Suppliers</button>
-                                <button data-collection="users" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Users</button>
                                 <button data-collection="usageLog" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Usage Logs</button>
                                 <button data-collection="purchases" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Purchases</button>
+                                <button data-collection="users" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Users</button>
                             </div>
                             <h3 id="generic-table-title" class="text-lg font-semibold text-gray-600 mb-2">Select a table to view its data</h3>
                             <div id="generic-table-container" class="overflow-x-auto"></div>
