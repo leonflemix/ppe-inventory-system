@@ -224,7 +224,6 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('auth-container').classList.add('hidden');
         mainApp.classList.remove('hidden');
         
-        // Apply permissions before loading data that might rely on them
         applyUIPermissions();
 
         listenForInventoryUpdates();
@@ -310,19 +309,19 @@ document.getElementById('add-user-form').addEventListener('submit', (e) => {
     const password = document.getElementById('new-user-password').value;
     const role = document.getElementById('new-user-role').value;
 
-    showConfirm("This will create a new user and may log you out. You might need to log back in to continue managing the application. Proceed?", async () => {
+    showConfirm("Creating a new user through this panel will log you out temporarily. You will need to log back in with your admin account to continue. Proceed?", async () => {
         try {
-            // We can't create a user without Firebase logging them in client-side.
-            // The proper way is with a Cloud Function, but this is the client-side workaround.
-            const tempAuth = getAuth(); // Use a temporary auth instance if needed, or just use the main one
+            // NOTE: The Firebase Auth SDK for clients (browsers) automatically signs in a user upon creation.
+            // This is a known behavior. A more robust solution for admin panels involves Cloud Functions
+            // to create users without affecting the admin's session, but that is beyond the scope of this client-side app.
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             await setDoc(doc(db, 'users', user.uid), { email, role });
 
-            showToast('User created successfully. Please log back in if you were signed out.');
-            // Clear the form
+            // After creation, Firebase signs in the new user, which logs the admin out.
+            // We can't prevent this on the client-side, so we just inform the admin.
+            showAlert('User created successfully. You have been logged out. Please log back in.', 'Action Required');
             e.target.reset();
-            // The onAuthStateChanged listener will handle the UI shift.
         } catch (error) {
             showAlert(error.message, 'Failed to Create User');
         }
@@ -332,7 +331,7 @@ document.getElementById('add-user-form').addEventListener('submit', (e) => {
 
 function renderUsersTable() {
     const tableBody = document.getElementById('users-table-body');
-    if (currentUserRole !== 'admin') return;
+    if (currentUserRole !== 'admin' || !allUsers) return;
 
     tableBody.innerHTML = allUsers.map(user => {
         const isCurrentUser = auth.currentUser && auth.currentUser.uid === user.uid;
@@ -360,26 +359,9 @@ document.getElementById('users-table-body').addEventListener('change', async (e)
 
 
 // --- CHARTING LOGIC ---
-function updateDashboardCharts() {
-    if (!currentUsageLogs || !currentInventory) return;
-    const itemUsage = currentUsageLogs.reduce((acc, log) => { acc[log.itemName] = (acc[log.itemName] || 0) + log.quantityUsed; return acc; }, {});
-    const sortedItems = Object.entries(itemUsage).sort(([, a], [, b]) => b - a).slice(0, 5);
-    renderBarChart('top-used-items-chart', sortedItems.map(item => item[0]), sortedItems.map(item => item[1]));
-    const categoryCounts = currentInventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {});
-    renderPieChart('items-by-category-chart', Object.keys(categoryCounts), Object.values(categoryCounts));
-}
-
-function renderBarChart(canvasId, labels, data) {
-    if (topUsedItemsChart) topUsedItemsChart.destroy();
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    topUsedItemsChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Quantity Used', data, backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } });
-}
-
-function renderPieChart(canvasId, labels, data) {
-    if (itemsByCategoryChart) itemsByCategoryChart.destroy();
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    itemsByCategoryChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'] }] }, options: { responsive: true, maintainAspectRatio: false } });
-}
+function updateDashboardCharts() { if (!currentUsageLogs || !currentInventory) return; const itemUsage = currentUsageLogs.reduce((acc, log) => { acc[log.itemName] = (acc[log.itemName] || 0) + log.quantityUsed; return acc; }, {}); const sortedItems = Object.entries(itemUsage).sort(([, a], [, b]) => b - a).slice(0, 5); renderBarChart('top-used-items-chart', sortedItems.map(item => item[0]), sortedItems.map(item => item[1])); const categoryCounts = currentInventory.reduce((acc, item) => { acc[item.category] = (acc[item.category] || 0) + 1; return acc; }, {}); renderPieChart('items-by-category-chart', Object.keys(categoryCounts), Object.values(categoryCounts)); }
+function renderBarChart(canvasId, labels, data) { if (topUsedItemsChart) topUsedItemsChart.destroy(); const ctx = document.getElementById(canvasId).getContext('2d'); topUsedItemsChart = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: 'Quantity Used', data, backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } } }); }
+function renderPieChart(canvasId, labels, data) { if (itemsByCategoryChart) itemsByCategoryChart.destroy(); const ctx = document.getElementById(canvasId).getContext('2d'); itemsByCategoryChart = new Chart(ctx, { type: 'pie', data: { labels, datasets: [{ data, backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'] }] }, options: { responsive: true, maintainAspectRatio: false } }); }
 
 // --- Generic Search & Sort ---
 function applySearch(data, searchTerm, key = 'name') { if (!searchTerm) return data; return data.filter(item => item[key] && item[key].toLowerCase().includes(searchTerm.toLowerCase())); }
