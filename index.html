@@ -65,16 +65,19 @@
                     <a href="#" id="nav-reports" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-chart-bar w-6 text-center"></i><span class="ml-3">Reports</span>
                     </a>
-                    <a href="#" id="nav-employees" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-employees" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-users w-6 text-center"></i><span class="ml-3">Employees</span>
                     </a>
-                     <a href="#" id="nav-machines" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                     <a href="#" id="nav-machines" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-cogs w-6 text-center"></i><span class="ml-3">Machines</span>
                     </a>
-                    <a href="#" id="nav-suppliers" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-suppliers" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-truck w-6 text-center"></i><span class="ml-3">Suppliers</span>
                     </a>
-                    <a href="#" id="nav-table-manager" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                    <a href="#" id="nav-users" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-user-shield w-6 text-center"></i><span class="ml-3">Users</span>
+                    </a>
+                    <a href="#" id="nav-table-manager" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
                         <i class="fas fa-database w-6 text-center"></i><span class="ml-3">Table Manager</span>
                     </a>
                 </nav>
@@ -92,6 +95,7 @@
                     <div class="flex items-center space-x-4">
                         <div class="text-right">
                             <p id="user-email" class="font-semibold text-gray-700">Not logged in</p>
+                            <p id="user-role-display" class="text-xs text-gray-500"></p>
                         </div>
                         <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300">
                             <i class="fas fa-sign-out-alt mr-2"></i>Logout
@@ -249,6 +253,25 @@
                             <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Supplier Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="suppliers-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading suppliers...</td></tr></tbody></table></div>
                         </div>
                     </div>
+                     <!-- Users View -->
+                    <div id="users-view" class="hidden">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">User Management</h2>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-500">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3">User Email</th>
+                                            <th class="px-6 py-3">Role</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-table-body">
+                                        <tr><td colspan="2" class="text-center p-8 text-gray-500">Loading users...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Table Manager View -->
                     <div id="table-manager-view" class="hidden space-y-8">
                         <div class="bg-white rounded-xl shadow-md p-6">
@@ -258,6 +281,7 @@
                                 <button data-collection="employees" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Employees</button>
                                 <button data-collection="machines" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Machines</button>
                                 <button data-collection="suppliers" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Suppliers</button>
+                                <button data-collection="users" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Users</button>
                                 <button data-collection="usageLog" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Usage Logs</button>
                                 <button data-collection="purchases" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Purchases</button>
                             </div>
