@@ -391,9 +391,9 @@ document.getElementById('cancel-edit-supplier-btn').addEventListener('click', ()
 
 // --- INVENTORY, USAGE, & RESTOCKING LOGIC ---
 document.getElementById('inventory-search').addEventListener('input', () => renderInventoryTable());
-function renderInventoryTable() { if (!currentInventory) return; const searchTerm = document.getElementById('inventory-search').value; const withTotal = currentInventory.map(item => ({...item, totalStock: item.location1 + item.location2})); const filtered = applySearch(withTotal, searchTerm); const sorted = applySort(filtered, sortState.key, sortState.order); const tableBody = document.getElementById('inventory-table-body'); const isUser = currentUserRole === 'user'; const isManagerOrAdmin = currentUserRole === 'manager' || currentUserRole === 'admin'; tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="7" class="text-center p-8 text-gray-500">No items in inventory.</td></tr>' : sorted.map(item => { let statusClass = 'bg-green-100 text-green-800'; let statusText = 'In Stock'; if (item.totalStock <= 0) { statusClass = 'bg-red-100 text-red-800'; statusText = 'Out of Stock'; } else if (item.totalStock <= item.lowStockThreshold) { statusClass = 'bg-yellow-100 text-yellow-800'; statusText = 'Low Stock'; } const adminButtons = isManagerOrAdmin ? `<button class="restock-item-btn text-purple-600 hover:text-purple-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-plus-circle"></i> Restock</button><button class="edit-item-btn text-blue-600 hover:text-blue-900" data-id="${item.id}"><i class="fas fa-edit"></i> Edit</button><button class="delete-item-btn text-red-600 hover:text-red-900" data-id="${item.id}"><i class="fas fa-trash"></i> Delete</button>` : ''; return `<tr class="bg-white border-b hover:bg-gray-50"><th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.name}</th><td class="px-6 py-4">${item.category}</td><td class="px-6 py-4">${item.location1}</td><td class="px-6 py-4">${item.location2}</td><td class="px-6 py-4 font-bold">${item.totalStock}</td><td class="px-6 py-4"><span class="px-2 py-1 font-semibold leading-tight text-xs rounded-full ${statusClass}">${statusText}</span></td><td class="px-6 py-4 text-center space-x-2"><button class="use-item-btn text-green-600 hover:text-green-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-clipboard-check"></i> Use</button>${adminButtons}</td></tr>`; }).join(''); }
+function renderInventoryTable() { if (!currentInventory) return; const searchTerm = document.getElementById('inventory-search').value; const withTotal = currentInventory.map(item => ({...item, totalStock: item.location1 + item.location2})); const filtered = applySearch(withTotal, searchTerm); const sorted = applySort(filtered, sortState.key, sortState.order); const tableBody = document.getElementById('inventory-table-body'); const isUser = currentUserRole === 'user'; const isManagerOrAdmin = currentUserRole === 'manager' || currentUserRole === 'admin'; tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="7" class="text-center p-8 text-gray-500">No items in inventory.</td></tr>' : sorted.map(item => { let statusClass = 'bg-green-100 text-green-800'; let statusText = 'In Stock'; if (item.totalStock <= 0) { statusClass = 'bg-red-100 text-red-800'; statusText = 'Out of Stock'; } else if (item.totalStock <= item.lowStockThreshold) { statusClass = 'bg-yellow-100 text-yellow-800'; statusText = 'Low Stock'; } const managerButtons = isManagerOrAdmin ? `<button class="restock-item-btn text-purple-600 hover:text-purple-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-plus-circle"></i> Restock</button><button class="delete-item-btn text-red-600 hover:text-red-900" data-id="${item.id}"><i class="fas fa-trash"></i> Delete</button>` : ''; return `<tr class="bg-white border-b hover:bg-gray-50"><th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${item.name}</th><td class="px-6 py-4">${item.category}</td><td class="px-6 py-4">${item.location1}</td><td class="px-6 py-4">${item.location2}</td><td class="px-6 py-4 font-bold">${item.totalStock}</td><td class="px-6 py-4"><span class="px-2 py-1 font-semibold leading-tight text-xs rounded-full ${statusClass}">${statusText}</span></td><td class="px-6 py-4 text-center space-x-2"><button class="use-item-btn text-green-600 hover:text-green-900" data-id="${item.id}" data-name="${item.name}"><i class="fas fa-clipboard-check"></i> Use</button>${managerButtons}</td></tr>`; }).join(''); }
 function updateDashboardCards(inventory) { if (!inventory) return; document.getElementById('total-items').textContent = inventory.length; document.getElementById('items-in-stock').textContent = inventory.reduce((sum, item) => sum + item.location1 + item.location2, 0); document.getElementById('low-stock-items').textContent = inventory.filter(item => (item.location1 + item.location2) > 0 && (item.location1 + item.location2) <= item.lowStockThreshold).length; document.getElementById('out-of-stock-items').textContent = inventory.filter(item => (item.location1 + item.location2) <= 0).length; }
-document.getElementById('inventory-table-body').addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id; if (target.classList.contains('delete-item-btn') && currentUserRole !== 'user') { showConfirm('Are you sure you want to delete this item? This will remove it from inventory completely.', async () => { await deleteDoc(doc(db, 'inventory', id)); showToast('Item deleted.', 'success'); }); } else if (target.classList.contains('edit-item-btn') && currentUserRole !== 'user') { const item = currentInventory.find(i => i.id === id); if (item) { document.getElementById('modal-title').textContent = 'Edit PPE Item'; document.getElementById('item-id').value = item.id; document.getElementById('item-name').value = item.name; document.getElementById('item-category').value = item.category; document.getElementById('item-location1').value = item.location1; document.getElementById('item-location2').value = item.location2; document.getElementById('item-low-stock').value = item.lowStockThreshold; showModal(document.getElementById('item-modal')); } } else if (target.classList.contains('use-item-btn')) { document.getElementById('use-item-id').value = id; document.getElementById('use-item-name').textContent = target.dataset.name; document.getElementById('use-item-form').reset(); showModal(document.getElementById('use-item-modal')); } else if (target.classList.contains('restock-item-btn') && currentUserRole !== 'user') { document.getElementById('restock-item-id').value = id; document.getElementById('restock-item-name').textContent = target.dataset.name; document.getElementById('restock-form').reset(); showModal(document.getElementById('restock-modal')); } });
+document.getElementById('inventory-table-body').addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id; if (target.classList.contains('delete-item-btn') && currentUserRole !== 'user') { showConfirm('Are you sure you want to delete this item? This will remove it from inventory completely.', async () => { await deleteDoc(doc(db, 'inventory', id)); showToast('Item deleted.', 'success'); }); } else if (target.classList.contains('use-item-btn')) { document.getElementById('use-item-id').value = id; document.getElementById('use-item-name').textContent = target.dataset.name; document.getElementById('use-item-form').reset(); showModal(document.getElementById('use-item-modal')); } else if (target.classList.contains('restock-item-btn') && currentUserRole !== 'user') { document.getElementById('restock-item-id').value = id; document.getElementById('restock-item-name').textContent = target.dataset.name; document.getElementById('restock-form').reset(); showModal(document.getElementById('restock-modal')); } });
 document.getElementById('use-item-form').addEventListener('submit', async (e) => { e.preventDefault(); const itemId = document.getElementById('use-item-id').value; const employeeId = document.getElementById('use-employee-select').value; const employeeName = document.getElementById('use-employee-select').options[document.getElementById('use-employee-select').selectedIndex].text; const machineId = document.getElementById('use-machine-select').value; const machineName = document.getElementById('use-machine-select').options[document.getElementById('use-machine-select').selectedIndex].text; const quantity = parseInt(document.getElementById('use-quantity').value); const location = document.getElementById('use-location').value; const notes = document.getElementById('use-notes').value.trim(); if (!itemId || !quantity || !location || !employeeId || !machineId) { showAlert('Please fill all required fields.', 'Missing Information'); return; } try { await runTransaction(db, async (transaction) => { const itemRef = doc(db, 'inventory', itemId); const itemDoc = await transaction.get(itemRef); if (!itemDoc.exists()) throw "Item does not exist!"; const currentStock = itemDoc.data()[location]; if (currentStock < quantity) throw `Not enough stock. Available: ${currentStock}`; transaction.update(itemRef, { [location]: currentStock - quantity }); await addDoc(usageLogCollection, { loggedBy: auth.currentUser.email, employeeId, employeeName, machineId, machineName, itemId, itemName: itemDoc.data().name, quantityUsed: quantity, location, notes, timestamp: serverTimestamp() }); }); hideModal(document.getElementById('use-item-modal')); showToast('Usage recorded successfully!'); } catch (error) { showAlert("Transaction failed: " + error); } });
 document.getElementById('restock-form').addEventListener('submit', async (e) => { e.preventDefault(); const itemId = document.getElementById('restock-item-id').value; const itemName = document.getElementById('restock-item-name').textContent; const quantity = parseInt(document.getElementById('restock-quantity').value); const totalCost = parseFloat(document.getElementById('restock-cost').value) || 0; const supplierSelect = document.getElementById('restock-supplier'); const supplierId = supplierSelect.value; const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text; const location = document.getElementById('restock-location').value; if (!itemId || !quantity || !location || !supplierId) { showAlert('Please fill all required fields.', 'Missing Information'); return; } try { await runTransaction(db, async (transaction) => { const itemRef = doc(db, 'inventory', itemId); const itemDoc = await transaction.get(itemRef); if (!itemDoc.exists()) throw "Item does not exist!"; const currentStock = itemDoc.data()[location]; transaction.update(itemRef, { [location]: currentStock + quantity }); await addDoc(purchasesCollection, { loggedBy: auth.currentUser.email, itemId, itemName, quantity, totalCost, supplier: supplierName, supplierId, restockLocation: location, purchaseDate: serverTimestamp() }); }); hideModal(document.getElementById('restock-modal')); showToast('Item restocked successfully!'); } catch (error) { showAlert("Restock transaction failed: " + error); } });
 
@@ -523,7 +523,6 @@ document.getElementById('cancel-restock-btn').addEventListener('click', () => hi
 document.getElementById('add-item-btn').addEventListener('click', () => { document.getElementById('modal-title').textContent = 'Add New PPE Item'; document.getElementById('item-form').reset(); document.getElementById('item-id').value = ''; showModal(document.getElementById('item-modal')); });
 document.getElementById('item-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('item-id').value;
     const itemData = {
         name: document.getElementById('item-name').value,
         category: document.getElementById('item-category').value,
@@ -532,92 +531,9 @@ document.getElementById('item-form').addEventListener('submit', async (e) => {
         lowStockThreshold: parseInt(document.getElementById('item-low-stock').value)
     };
 
-    if (id) {
-        // This is an update, so we check for stock changes and log them.
-        const originalItem = currentInventory.find(i => i.id === id);
-        if (!originalItem) {
-            showAlert("Could not find the original item to compare stock levels.", "Update Error");
-            return;
-        }
-
-        const diff1 = itemData.location1 - originalItem.location1;
-        const diff2 = itemData.location2 - originalItem.location2;
-        const loggedInUserEmail = auth.currentUser.email;
-
-        // Create log entries for any stock adjustments
-        const logPromises = [];
-
-        if (diff1 !== 0) {
-            if (diff1 > 0) { // Positive adjustment (add to purchases)
-                logPromises.push(addDoc(purchasesCollection, {
-                    loggedBy: loggedInUserEmail,
-                    itemId: id,
-                    itemName: itemData.name,
-                    quantity: diff1,
-                    totalCost: 0,
-                    supplier: 'Admin Adjustment',
-                    supplierId: 'ADMIN_ADJUST',
-                    restockLocation: 'location1',
-                    purchaseDate: serverTimestamp()
-                }));
-            } else { // Negative adjustment (add to usage log)
-                logPromises.push(addDoc(usageLogCollection, {
-                    loggedBy: loggedInUserEmail,
-                    employeeId: 'ADMIN_ADJUST',
-                    employeeName: loggedInUserEmail,
-                    machineId: 'ADMIN_ADJUST',
-                    machineName: 'Admin Adjustment',
-                    itemId: id,
-                    itemName: itemData.name,
-                    quantityUsed: Math.abs(diff1),
-                    location: 'location1',
-                    notes: 'Manual stock adjustment by admin.',
-                    timestamp: serverTimestamp()
-                }));
-            }
-        }
-
-        if (diff2 !== 0) {
-            if (diff2 > 0) { // Positive adjustment
-                logPromises.push(addDoc(purchasesCollection, {
-                    loggedBy: loggedInUserEmail,
-                    itemId: id,
-                    itemName: itemData.name,
-                    quantity: diff2,
-                    totalCost: 0,
-                    supplier: 'Admin Adjustment',
-                    supplierId: 'ADMIN_ADJUST',
-                    restockLocation: 'location2',
-                    purchaseDate: serverTimestamp()
-                }));
-            } else { // Negative adjustment
-                logPromises.push(addDoc(usageLogCollection, {
-                    loggedBy: loggedInUserEmail,
-                    employeeId: 'ADMIN_ADJUST',
-                    employeeName: loggedInUserEmail,
-                    machineId: 'ADMIN_ADJUST',
-                    machineName: 'Admin Adjustment',
-                    itemId: id,
-                    itemName: itemData.name,
-                    quantityUsed: Math.abs(diff2),
-                    location: 'location2',
-                    notes: 'Manual stock adjustment by admin.',
-                    timestamp: serverTimestamp()
-                }));
-            }
-        }
-
-        // Wait for all logging to complete, then update the item.
-        await Promise.all(logPromises);
-        await updateDoc(doc(db, 'inventory', id), itemData);
-        showToast('Item updated successfully!');
-        
-    } else {
-        // This is a new item.
-        await addDoc(inventoryCollection, itemData);
-        showToast('Item added successfully!');
-    }
-    
+    await addDoc(inventoryCollection, itemData);
+    showToast('Item added successfully!');
     hideModal(document.getElementById('item-modal'));
 });
+
 
