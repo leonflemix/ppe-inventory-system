@@ -371,22 +371,120 @@ setupTableSorting(document.querySelector('#purchases-table-body').closest('table
 
 // --- All Management Sections ---
 document.getElementById('employee-search').addEventListener('input', () => renderEmployeesTable());
-document.getElementById('add-employee-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('employee-name-input'); const name = input.value.trim(); if (name) { await addDoc(employeesCollection, { name }); input.value = ''; showToast('Employee added successfully!'); } });
+document.getElementById('add-employee-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('employee-name-input');
+    const name = input.value.trim();
+    if (!name) {
+        showAlert("Employee name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentEmployees.some(emp => emp.name.toLowerCase() === name.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`An employee with the name "${name}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await addDoc(employeesCollection, { name });
+    input.value = '';
+    showToast('Employee added successfully!');
+});
 function renderEmployeesTable() { if (!currentEmployees) return; const searchTerm = document.getElementById('employee-search').value; const filtered = applySearch(currentEmployees, searchTerm); const sorted = applySort(filtered, sortState.key, sortState.order); const tableBody = document.getElementById('employees-table-body'); tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No employees found.</td></tr>' : sorted.map(emp => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${emp.name}</td><td class="px-6 py-4 text-center space-x-2"><button class="edit-employee-btn text-blue-600 hover:text-blue-900" data-id="${emp.id}" data-name="${emp.name}"><i class="fas fa-edit"></i> Edit</button><button class="delete-employee-btn text-red-600 hover:text-red-900" data-id="${emp.id}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join(''); }
 document.getElementById('employees-table-body').addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id; if (target.classList.contains('delete-employee-btn')) { showConfirm('Are you sure you want to delete this employee?', async () => { await deleteDoc(doc(db, 'employees', id)); showToast('Employee deleted.', 'success'); }); } else if (target.classList.contains('edit-employee-btn')) { document.getElementById('edit-employee-id').value = id; document.getElementById('edit-employee-name-input').value = target.dataset.name; showModal(document.getElementById('edit-employee-modal')); } });
-document.getElementById('edit-employee-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('edit-employee-id').value; const newName = document.getElementById('edit-employee-name-input').value.trim(); if (id && newName) { await updateDoc(doc(db, 'employees', id), { name: newName }); hideModal(document.getElementById('edit-employee-modal')); showToast('Employee updated!'); } });
+document.getElementById('edit-employee-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-employee-id').value;
+    const newName = document.getElementById('edit-employee-name-input').value.trim();
+    if (!newName) {
+        showAlert("Employee name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentEmployees.some(emp => emp.id !== id && emp.name.toLowerCase() === newName.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`An employee with the name "${newName}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await updateDoc(doc(db, 'employees', id), { name: newName });
+    hideModal(document.getElementById('edit-employee-modal'));
+    showToast('Employee updated!');
+});
 document.getElementById('cancel-edit-employee-btn').addEventListener('click', () => hideModal(document.getElementById('edit-employee-modal')));
+
 document.getElementById('machine-search').addEventListener('input', () => renderMachinesTable());
-document.getElementById('add-machine-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('machine-name-input'); const name = input.value.trim(); if (name) { await addDoc(machinesCollection, { name }); input.value = ''; showToast('Machine added successfully!'); } });
+document.getElementById('add-machine-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('machine-name-input');
+    const name = input.value.trim();
+    if (!name) {
+        showAlert("Machine name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentMachines.some(m => m.name.toLowerCase() === name.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`A machine with the name "${name}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await addDoc(machinesCollection, { name });
+    input.value = '';
+    showToast('Machine added successfully!');
+});
 function renderMachinesTable() { if (!currentMachines) return; const searchTerm = document.getElementById('machine-search').value; const filtered = applySearch(currentMachines, searchTerm); const sorted = applySort(filtered, sortState.key, sortState.order); const tableBody = document.getElementById('machines-table-body'); tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No machines found.</td></tr>' : sorted.map(m => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${m.name}</td><td class="px-6 py-4 text-center space-x-2"><button class="edit-machine-btn text-blue-600 hover:text-blue-900" data-id="${m.id}" data-name="${m.name}"><i class="fas fa-edit"></i> Edit</button><button class="delete-machine-btn text-red-600 hover:text-red-900" data-id="${m.id}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join(''); }
 document.getElementById('machines-table-body').addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id; if (target.classList.contains('delete-machine-btn')) { showConfirm('Are you sure you want to delete this machine?', async () => { await deleteDoc(doc(db, 'machines', id)); showToast('Machine deleted.', 'success'); }); } else if (target.classList.contains('edit-machine-btn')) { document.getElementById('edit-machine-id').value = id; document.getElementById('edit-machine-name-input').value = target.dataset.name; showModal(document.getElementById('edit-machine-modal')); } });
-document.getElementById('edit-machine-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('edit-machine-id').value; const newName = document.getElementById('edit-machine-name-input').value.trim(); if (id && newName) { await updateDoc(doc(db, 'machines', id), { name: newName }); hideModal(document.getElementById('edit-machine-modal')); showToast('Machine updated!'); } });
+document.getElementById('edit-machine-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-machine-id').value;
+    const newName = document.getElementById('edit-machine-name-input').value.trim();
+    if (!newName) {
+        showAlert("Machine name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentMachines.some(m => m.id !== id && m.name.toLowerCase() === newName.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`A machine with the name "${newName}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await updateDoc(doc(db, 'machines', id), { name: newName });
+    hideModal(document.getElementById('edit-machine-modal'));
+    showToast('Machine updated!');
+});
 document.getElementById('cancel-edit-machine-btn').addEventListener('click', () => hideModal(document.getElementById('edit-machine-modal')));
+
 document.getElementById('supplier-search').addEventListener('input', () => renderSuppliersTable());
-document.getElementById('add-supplier-form').addEventListener('submit', async (e) => { e.preventDefault(); const input = document.getElementById('supplier-name-input'); const name = input.value.trim(); if (name) { await addDoc(suppliersCollection, { name }); input.value = ''; showToast('Supplier added successfully!'); } });
+document.getElementById('add-supplier-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('supplier-name-input');
+    const name = input.value.trim();
+    if (!name) {
+        showAlert("Supplier name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentSuppliers.some(s => s.name.toLowerCase() === name.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`A supplier with the name "${name}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await addDoc(suppliersCollection, { name });
+    input.value = '';
+    showToast('Supplier added successfully!');
+});
 function renderSuppliersTable() { if (!currentSuppliers) return; const searchTerm = document.getElementById('supplier-search').value; const filtered = applySearch(currentSuppliers, searchTerm); const sorted = applySort(filtered, sortState.key, sortState.order); const tableBody = document.getElementById('suppliers-table-body'); tableBody.innerHTML = sorted.length === 0 ? '<tr><td colspan="2" class="text-center p-8 text-gray-500">No suppliers found.</td></tr>' : sorted.map(s => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${s.name}</td><td class="px-6 py-4 text-center space-x-2"><button class="edit-supplier-btn text-blue-600 hover:text-blue-900" data-id="${s.id}" data-name="${s.name}"><i class="fas fa-edit"></i> Edit</button><button class="delete-supplier-btn text-red-600 hover:text-red-900" data-id="${s.id}"><i class="fas fa-trash"></i> Delete</button></td></tr>`).join(''); }
 document.getElementById('suppliers-table-body').addEventListener('click', (e) => { const target = e.target.closest('button'); if (!target) return; const id = target.dataset.id; if (target.classList.contains('delete-supplier-btn')) { showConfirm('Are you sure you want to delete this supplier?', async () => { await deleteDoc(doc(db, 'suppliers', id)); showToast('Supplier deleted.', 'success'); }); } else if (target.classList.contains('edit-supplier-btn')) { document.getElementById('edit-supplier-id').value = id; document.getElementById('edit-supplier-name-input').value = target.dataset.name; showModal(document.getElementById('edit-supplier-modal')); } });
-document.getElementById('edit-supplier-form').addEventListener('submit', async (e) => { e.preventDefault(); const id = document.getElementById('edit-supplier-id').value; const newName = document.getElementById('edit-supplier-name-input').value.trim(); if (id && newName) { await updateDoc(doc(db, 'suppliers', id), { name: newName }); hideModal(document.getElementById('edit-supplier-modal')); showToast('Supplier updated!'); } });
+document.getElementById('edit-supplier-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-supplier-id').value;
+    const newName = document.getElementById('edit-supplier-name-input').value.trim();
+    if (!newName) {
+        showAlert("Supplier name cannot be empty.", "Validation Error");
+        return;
+    }
+    const isDuplicate = currentSuppliers.some(s => s.id !== id && s.name.toLowerCase() === newName.toLowerCase());
+    if (isDuplicate) {
+        showAlert(`A supplier with the name "${newName}" already exists.`, "Duplicate Entry");
+        return;
+    }
+    await updateDoc(doc(db, 'suppliers', id), { name: newName });
+    hideModal(document.getElementById('edit-supplier-modal'));
+    showToast('Supplier updated!');
+});
 document.getElementById('cancel-edit-supplier-btn').addEventListener('click', () => hideModal(document.getElementById('edit-supplier-modal')));
 
 // --- INVENTORY, USAGE, & RESTOCKING LOGIC ---
@@ -399,7 +497,7 @@ document.getElementById('restock-form').addEventListener('submit', async (e) => 
 
 // --- PURCHASES VIEW ---
 document.getElementById('purchases-filter-container').addEventListener('input', () => renderPurchasesTable());
-function renderPurchasesTable() { if (!currentPurchases) return; const searchTerm = document.getElementById('purchase-search').value; const supplierId = document.getElementById('supplier-filter').value; let filtered = applySearch(currentPurchases, searchTerm, 'itemName'); if (supplierId) { filtered = filtered.filter(p => p.supplierId === supplierId); } filteredPurchases = filtered; document.getElementById('export-purchases-btn').disabled = filteredPurchases.length === 0; const sorted = applySort(filteredPurchases, sortState.key, sortState.order); const tableBody = document.getElementById('purchases-table-body'); if (sorted.length === 0) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">No purchase records found.</td></tr>`; return; } tableBody.innerHTML = sorted.map(p => { const date = p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A'; const cost = p.totalCost ? `$${p.totalCost.toFixed(2)}` : 'N/A'; return `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${date}</td><td class="px-6 py-4 font-medium text-gray-900">${p.itemName}</td><td class="px-6 py-4">${p.quantity}</td><td class="px-6 py-4">${cost}</td><td class="px-6 py-4">${p.supplier || 'N/A'}</td><td class="px-6 py-4">${p.restockLocation === 'location1' ? 'Location 1' : 'Location 2'}</td><td class="px-6 py-4">${p.loggedBy}</td></tr>`; }).join(''); }
+function renderPurchasesTable() { if (!currentPurchases) return; const searchTerm = document.getElementById('purchase-search').value; const supplierId = document.getElementById('supplier-filter').value; let filtered = applySearch(currentPurchases, searchTerm, 'itemName'); if (supplierId) { filtered = filtered.filter(p => p.supplierId === supplierId); } filteredPurchases = filtered; document.getElementById('export-purchases-btn').disabled = filteredPurchases.length === 0; const sorted = applySort(filteredPurchases, sortState.key, sortState.order); const tableBody = document.getElementById('purchases-table-body'); if (sorted.length === 0) { tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">No purchase records found.</td></tr>`; return; } tableBody.innerHTML = sorted.map(p => { const date = p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A'; const cost = p.totalCost ? `$${p.totalCost.toFixed(2)}` : 'N/A'; return `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${date}</td><td class="px-6 py-4 font-medium text-gray-900">${p.itemName}</td><td class="px-6 py-4">${p.quantity}</td><td class="px-6 py-4">${cost}</td><td class="px-6 py-4">${p.supplier || 'N/A'}</td><td class="px-6 py-4">${p.restockLocation === 'location1' ? 'Upper Office' : 'Lower Office'}</td><td class="px-6 py-4">${p.loggedBy}</td></tr>`; }).join(''); }
 
 // --- REPORTING & CSV EXPORT ---
 function populateItemReportDropdown() { const select = document.getElementById('report-item-select'); select.innerHTML = '<option value="">-- Select an Item --</option>'; if(currentInventory) currentInventory.forEach(item => select.innerHTML += `<option value="${item.id}">${item.name}</option>`); }
@@ -410,7 +508,7 @@ function exportToCsv(filename, data) { if (data.length === 0) { showAlert('No da
 document.getElementById('export-item-report-btn').addEventListener('click', () => exportToCsv(`item-report.csv`, activeReport.data));
 document.getElementById('export-employee-report-btn').addEventListener('click', () => exportToCsv(`employee-report.csv`, activeReport.data));
 document.getElementById('export-machine-report-btn').addEventListener('click', () => exportToCsv(`machine-report.csv`, activeReport.data));
-document.getElementById('export-purchases-btn').addEventListener('click', () => { const dataToExport = filteredPurchases.map(p => ({ purchaseDate: p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A', itemName: p.itemName, quantity: p.quantity, totalCost: p.totalCost || 'N/A', supplier: p.supplier || 'N/A', restockedTo: p.restockLocation === 'location1' ? 'Location 1' : 'Location 2', loggedBy: p.loggedBy })); exportToCsv('purchases-report.csv', dataToExport); });
+document.getElementById('export-purchases-btn').addEventListener('click', () => { const dataToExport = filteredPurchases.map(p => ({ purchaseDate: p.purchaseDate ? p.purchaseDate.toDate().toLocaleString() : 'N/A', itemName: p.itemName, quantity: p.quantity, totalCost: p.totalCost || 'N/A', supplier: p.supplier || 'N/A', restockedTo: p.restockLocation === 'location1' ? 'Upper Office' : 'Lower Office', loggedBy: p.loggedBy })); exportToCsv('purchases-report.csv', dataToExport); });
 
 document.getElementById('report-search').addEventListener('input', () => {
     // Re-render the currently active report with the search term
@@ -475,7 +573,7 @@ function renderReportTable(tableBody, docs, reportType) {
         if (reportType === 'item') { Object.assign(exportData, { employee: data.employeeName, machine: data.machineName }); }
         else if (reportType === 'employee') { Object.assign(exportData, { item: data.itemName, machine: data.machineName }); }
         else if (reportType === 'machine') { Object.assign(exportData, { item: data.itemName, employee: data.employeeName }); }
-        Object.assign(exportData, { quantity: data.quantityUsed, location: data.location, loggedBy: data.loggedBy });
+        Object.assign(exportData, { quantity: data.quantityUsed, location: data.location === 'location1' ? 'Upper Office' : 'Lower Office', loggedBy: data.loggedBy });
         return exportData;
     });
     document.getElementById(`export-${reportType}-report-btn`).disabled = false;
@@ -490,12 +588,13 @@ function renderReportTable(tableBody, docs, reportType) {
         if (reportType === 'item') { mainCol1 = data.employeeName; mainCol2 = data.machineName; }
         else if (reportType === 'employee') { mainCol1 = data.itemName; mainCol2 = data.machineName; }
         else if (reportType === 'machine') { mainCol1 = data.itemName; mainCol2 = data.employeeName; }
+        const locationDisplay = data.location === 'location1' ? 'Upper Office' : 'Lower Office';
         return `<tr class="bg-white border-b">
             <td class="px-6 py-4">${date}</td>
             <td class="px-6 py-4">${mainCol1}</td>
             <td class="px-6 py-4">${mainCol2 || 'N/A'}</td>
             <td class="px-6 py-4">${data.quantityUsed}</td>
-            <td class="px-6 py-4">${data.location}</td>
+            <td class="px-6 py-4">${locationDisplay}</td>
             <td class="px-6 py-4">${data.loggedBy}</td>
             ${actions || ''}
         </tr>`;
@@ -535,5 +634,4 @@ document.getElementById('item-form').addEventListener('submit', async (e) => {
     showToast('Item added successfully!');
     hideModal(document.getElementById('item-modal'));
 });
-
 
