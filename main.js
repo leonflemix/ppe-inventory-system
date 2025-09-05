@@ -49,7 +49,7 @@ let currentPurchases = [];
 let currentUserIsAdmin = false;
 let activeReport = { type: null, data: [] };
 let sortState = { key: 'name', order: 'asc' };
-let topUsedItemsChart, itemsByCategoryChart, usageTrendChart;
+let topUsedItemsChart, itemsByCategoryChart;
 
 
 // --- MODAL & TOAST UTILITIES ---
@@ -329,40 +329,6 @@ function renderPieChart(canvasId, labels, data) {
         }
     });
 }
-
-function renderUsageTrendChart(docs) {
-    if (usageTrendChart) usageTrendChart.destroy();
-
-    const usageByDate = docs.reduce((acc, doc) => {
-        const date = doc.data().timestamp.toDate().toLocaleDateString();
-        acc[date] = (acc[date] || 0) + doc.data().quantityUsed;
-        return acc;
-    }, {});
-
-    const sortedDates = Object.keys(usageByDate).sort((a, b) => new Date(a) - new Date(b));
-    const chartData = sortedDates.map(date => usageByDate[date]);
-
-    const ctx = document.getElementById('usage-trend-chart').getContext('2d');
-    usageTrendChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: sortedDates,
-            datasets: [{
-                label: 'Quantity Used Per Day',
-                data: chartData,
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { y: { beginAtZero: true } }
-        }
-    });
-}
-
 
 // --- Generic Search & Sort ---
 function applySearch(data, searchTerm, key = 'name') {
@@ -765,13 +731,11 @@ async function fetchAndRenderItemReport() {
     const itemId = document.getElementById('report-item-select').value;
     
     const btn = document.getElementById('export-item-report-btn');
-    const chartContainer = document.getElementById('usage-trend-chart-container');
     const tableBody = document.getElementById('item-report-table-body');
     
     if (!itemId) { 
         tableBody.innerHTML = `<tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr>`; 
         btn.disabled = true; 
-        chartContainer.classList.add('hidden');
         activeReport.data = [];
         return; 
     }
@@ -792,13 +756,6 @@ async function fetchAndRenderItemReport() {
     });
     btn.disabled = activeReport.data.length === 0;
     
-    if(snapshot.docs.length > 0) {
-        chartContainer.classList.remove('hidden');
-        renderUsageTrendChart(snapshot.docs);
-    } else {
-        chartContainer.classList.add('hidden');
-    }
-
     renderReportTable(tableBody, snapshot.docs, 'item');
 }
 
