@@ -1,0 +1,101 @@
+/* Filename: style.css */
+/* Custom styles to complement Tailwind */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+}
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+.main-content::-webkit-scrollbar {
+    display: none;
+}
+.main-content {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+/* Sidebar active link style */
+.sidebar-link.active {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid #f59e0b; /* Amber color */
+}
+
+/* Sidebar Toggle Styles */
+#sidebar {
+    /* The `transition-all` class in the HTML handles this, but let's ensure it's smooth */
+    transition: width 0.3s ease-in-out;
+    overflow-x: hidden; /* Prevents content from wrapping and showing during collapse */
+}
+
+.sidebar-collapsed #sidebar {
+    width: 0;
+}
+
+/* This new rule smoothly hides the content inside the sidebar as it collapses */
+.sidebar-collapsed #sidebar > * {
+    opacity: 0;
+    pointer-events: none;
+    white-space: nowrap; /* Prevents text from wrapping on new lines */
+    transition: opacity 0.1s linear;
+}
+
+
+/* Sortable table headers */
+.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 20px;
+}
+.sortable::after {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    content: "\f0dc"; /* fa-sort */
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #cbd5e1; /* gray-300 */
+    transition: color 0.2s;
+}
+.sortable:hover::after {
+    color: #94a3b8; /* gray-400 */
+}
+.sortable.asc::after {
+    content: "\f0de"; /* fa-sort-up */
+    color: #2563eb; /* blue-600 */
+}
+.sortable.desc::after {
+    content: "\f0dd"; /* fa-sort-down */
+    color: #2563eb; /* blue-600 */
+}
+
+/* Toast Notifications */
+.toast {
+    animation: slide-in 0.3s ease-out, fade-out 0.5s ease-in 2.5s forwards;
+}
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+@keyframes fade-out {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Chart container styling */
+.chart-container {
+    position: relative;
+    height: 300px; /* Or any desired height */
+}
+

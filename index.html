@@ -1,0 +1,373 @@
+<!-- Filename: index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPE Inventory Management System</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Link to your custom stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100">
+
+    <!-- App Container -->
+    <div id="app" class="flex h-screen bg-gray-200">
+
+        <!-- Login/Signup Screen (Initially Visible) -->
+        <div id="auth-container" class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-700 to-indigo-900">
+            <div class="w-full max-w-md bg-white rounded-xl shadow-2xl p-8">
+                <h2 id="auth-title" class="text-3xl font-bold text-center text-gray-800 mb-2">Login</h2>
+                <p class="text-center text-gray-500 mb-8">Welcome to PPE Manager</p>
+                <div id="auth-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline" id="auth-error-message"></span>
+                </div>
+                <form id="auth-form">
+                    <div class="space-y-4">
+                        <input type="email" id="email" placeholder="Email" class="w-full px-4 py-3 bg-gray-100 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 bg-gray-100 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                    </div>
+                    <div class="mt-6">
+                        <button type="button" id="login-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 shadow-lg">Login</button>
+                        <button type="button" id="signup-btn" class="hidden w-full mt-3 bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition duration-300 shadow-lg">Sign Up</button>
+                    </div>
+                </form>
+                <p class="text-center text-sm text-gray-500 mt-6">
+                    <a href="#" id="toggle-auth" class="font-medium text-blue-600 hover:text-blue-500">Need an account? Sign Up</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- Main Application (Initially Hidden) -->
+        <div id="main-app" class="hidden w-full h-full flex">
+            <!-- Sidebar -->
+            <div id="sidebar" class="w-64 bg-gradient-to-b from-blue-800 to-indigo-900 text-white flex flex-col flex-shrink-0 transition-all duration-300">
+                <div class="text-center py-6 border-b border-white/20">
+                    <h1 class="text-2xl font-bold">PPE<span class="font-light">Manager</span></h1>
+                </div>
+                <nav id="sidebar-nav" class="flex-1 px-4 py-6 space-y-2">
+                    <a href="#" id="nav-dashboard" class="sidebar-link active flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-home w-6 text-center"></i><span class="ml-3">Dashboard</span>
+                    </a>
+                    <a href="#" id="nav-purchases" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-shopping-cart w-6 text-center"></i><span class="ml-3">Purchases</span>
+                    </a>
+                    <a href="#" id="nav-reports" class="sidebar-link flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-chart-bar w-6 text-center"></i><span class="ml-3">Reports</span>
+                    </a>
+                    <a href="#" id="nav-employees" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-users w-6 text-center"></i><span class="ml-3">Employees</span>
+                    </a>
+                     <a href="#" id="nav-machines" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-cogs w-6 text-center"></i><span class="ml-3">Machines</span>
+                    </a>
+                    <a href="#" id="nav-suppliers" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-truck w-6 text-center"></i><span class="ml-3">Suppliers</span>
+                    </a>
+                    <a href="#" id="nav-users" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-user-shield w-6 text-center"></i><span class="ml-3">Users</span>
+                    </a>
+                    <a href="#" id="nav-table-manager" class="sidebar-link hidden flex items-center px-4 py-3 rounded-lg hover:bg-white/10 transition">
+                        <i class="fas fa-database w-6 text-center"></i><span class="ml-3">Table Manager</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Content Area -->
+            <div id="content-area" class="flex-1 flex flex-col overflow-hidden transition-all duration-300">
+                <header class="flex justify-between items-center p-4 bg-white border-b-2 border-gray-200 shadow-sm">
+                    <div class="flex items-center">
+                        <button id="sidebar-toggle" class="text-gray-600 hover:text-gray-800 focus:outline-none mr-4">
+                            <i class="fas fa-bars fa-lg"></i>
+                        </button>
+                        <h1 id="page-title" class="text-2xl font-bold text-gray-800">Dashboard</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p id="user-email" class="font-semibold text-gray-700">Not logged in</p>
+                             <p id="user-role-display" class="text-sm text-gray-500">Role: User</p>
+                        </div>
+                        <button id="logout-btn" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-300">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Main Content -->
+                <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6 main-content">
+                    <!-- Dashboard View -->
+                    <div id="dashboard-view">
+                        <!-- Stat Cards -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                           <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-blue-100 text-blue-600 p-4 rounded-full mr-4"><i class="fas fa-hard-hat fa-2x"></i></div><div><p class="text-gray-500 text-sm">Total PPE Types</p><p id="total-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
+                           <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-green-100 text-green-600 p-4 rounded-full mr-4"><i class="fas fa-check-circle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Total Units in Stock</p><p id="items-in-stock" class="text-3xl font-bold text-gray-800">0</p></div></div>
+                           <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-yellow-100 text-yellow-600 p-4 rounded-full mr-4"><i class="fas fa-exclamation-triangle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Low Stock Items</p><p id="low-stock-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
+                           <div class="bg-white rounded-xl shadow-md p-5 flex items-center"><div class="bg-red-100 text-red-600 p-4 rounded-full mr-4"><i class="fas fa-times-circle fa-2x"></i></div><div><p class="text-gray-500 text-sm">Out of Stock Items</p><p id="out-of-stock-items" class="text-3xl font-bold text-gray-800">0</p></div></div>
+                        </div>
+                        <!-- Inventory Table -->
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                                <h2 class="text-xl font-bold text-gray-700">Inventory Status</h2>
+                                <div class="flex items-center space-x-4 w-full sm:w-auto">
+                                    <input type="text" id="inventory-search" placeholder="Search items..." class="w-full sm:w-64 p-2 border rounded-lg">
+                                    <button id="add-item-btn" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300 whitespace-nowrap"><i class="fas fa-plus mr-2"></i>Add New Item</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3 sortable" data-sort="name">PPE Item</th><th scope="col" class="px-6 py-3 sortable" data-sort="category">Category</th><th scope="col" class="px-6 py-3 sortable" data-sort="location1">Upper Office Stock</th><th scope="col" class="px-6 py-3 sortable" data-sort="location2">Lower Office Stock</th><th scope="col" class="px-6 py-3 sortable" data-sort="totalStock">Total Stock</th><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="inventory-table-body"><tr><td colspan="7" class="text-center p-8">Loading inventory...</td></tr></tbody></table></div>
+                        </div>
+                    </div>
+
+                    <!-- Purchases View -->
+                    <div id="purchases-view" class="hidden">
+                         <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                                <h2 class="text-xl font-bold text-gray-700">Purchase History</h2>
+                                <div id="purchases-filter-container" class="flex flex-wrap items-center gap-4">
+                                    <input type="text" id="purchase-search" placeholder="Search by item..." class="p-2 border rounded-lg">
+                                    <select id="supplier-filter" class="p-2 border rounded-lg">
+                                        <option value="">All Suppliers</option>
+                                    </select>
+                                    <button id="export-purchases-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left text-gray-500">
+                                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" class="px-6 py-3 sortable" data-sort="purchaseDate">Purchase Date</th>
+                                            <th scope="col" class="px-6 py-3 sortable" data-sort="itemName">Item Name</th>
+                                            <th scope="col" class="px-6 py-3 sortable" data-sort="quantity">Quantity</th>
+                                            <th scope="col" class="px-6 py-3 sortable" data-sort="totalCost">Total Cost</th>
+                                            <th scope="col" class="px-6 py-3 sortable" data-sort="supplier">Supplier</th>
+                                            <th scope="col" class="px-6 py-3">Restocked To</th>
+                                            <th scope="col" class="px-6 py-3">Logged By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="purchases-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reports View -->
+                    <div id="reports-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <input type="text" id="report-search" placeholder="Search current report..." class="w-full p-3 mb-6 border rounded-lg"
+                                   aria-label="Search reports">
+                        </div>
+                         <div class="bg-white rounded-xl shadow-md p-6">
+                             <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Item Usage Report</h2>
+                                <button id="export-item-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-item-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="item-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an item to view its usage history.</td></tr></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Employee PPE History</h2>
+                                <button id="export-employee-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-employee-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Machine</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="employee-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select an employee to see their PPE history.</td></tr></tbody></table></div>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Machine Usage Report</h2>
+                                <button id="export-machine-report-btn" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400" disabled><i class="fas fa-file-csv mr-2"></i>Export CSV</button>
+                            </div>
+                             <div class="flex flex-wrap items-center gap-4 mb-4 p-4 bg-gray-50 rounded-lg">
+                                <select id="report-machine-select" class="flex-grow p-2 border rounded-lg"></select>
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Date</th><th class="px-6 py-3">PPE Item</th><th class="px-6 py-3">Employee</th><th class="px-6 py-3">Quantity</th><th class="px-6 py-3">Location</th><th class="px-6 py-3">Logged By</th><th class="px-6 py-3">Actions</th></tr></thead><tbody id="machine-report-table-body"><tr><td colspan="7" class="text-center p-8 text-gray-500">Select a machine to see its PPE history.</td></tr></tbody></table></div>
+                        </div>
+                        <!-- Charts Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                            <div class="lg:col-span-2 bg-white rounded-xl shadow-md p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-700">Top 5 Most Used Items (Last 30 Days)</h3>
+                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="top-used-items-chart-body">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div id="top-used-items-chart-body" class="chart-container hidden">
+                                    <canvas id="top-used-items-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-white rounded-xl shadow-md p-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-700">Items by Category</h3>
+                                    <button class="chart-toggle-btn text-gray-500 hover:text-gray-800" data-chart="items-by-category-chart-body">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                                <div id="items-by-category-chart-body" class="chart-container hidden">
+                                    <canvas id="items-by-category-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Employees View -->
+                    <div id="employees-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Add New Employee</h2>
+                            <form id="add-employee-form" class="flex items-center space-x-4"><label for="employee-name-input" class="font-semibold">Employee Name:</label><input type="text" id="employee-name-input" placeholder="Enter full name" class="flex-grow p-2 border rounded-lg" required><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-user-plus mr-2"></i>Add Employee</button></form>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                             <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Current Employees</h2>
+                                <input type="text" id="employee-search" placeholder="Search employees..." class="w-64 p-2 border rounded-lg">
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Employee Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="employees-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading employees...</td></tr></tbody></table></div>
+                        </div>
+                    </div>
+                     <!-- Machines View -->
+                    <div id="machines-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Add New Machine</h2>
+                            <form id="add-machine-form" class="flex items-center space-x-4"><label for="machine-name-input" class="font-semibold">Machine Name/ID:</label><input type="text" id="machine-name-input" placeholder="Enter machine name or identifier" class="flex-grow p-2 border rounded-lg" required><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-plus mr-2"></i>Add Machine</button></form>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Current Machines</h2>
+                                <input type="text" id="machine-search" placeholder="Search machines..." class="w-64 p-2 border rounded-lg">
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Machine Name/ID</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="machines-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading machines...</td></tr></tbody></table></div>
+                        </div>
+                    </div>
+                     <!-- Suppliers View -->
+                    <div id="suppliers-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Add New Supplier</h2>
+                            <form id="add-supplier-form" class="flex items-center space-x-4"><label for="supplier-name-input" class="font-semibold">Supplier Name:</label><input type="text" id="supplier-name-input" placeholder="Enter supplier name" class="flex-grow p-2 border rounded-lg" required><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-plus mr-2"></i>Add Supplier</button></form>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h2 class="text-xl font-bold text-gray-700">Current Suppliers</h2>
+                                <input type="text" id="supplier-search" placeholder="Search suppliers..." class="w-64 p-2 border rounded-lg">
+                            </div>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3 sortable" data-sort="name">Supplier Name</th><th class="px-6 py-3 text-center">Actions</th></tr></thead><tbody id="suppliers-table-body"><tr><td colspan="2" class="text-center p-8 text-gray-500">Loading suppliers...</td></tr></tbody></table></div>
+                        </div>
+                    </div>
+                    <!-- Users View -->
+                    <div id="users-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                             <h2 class="text-xl font-bold text-gray-700 mb-4">Add New User</h2>
+                             <form id="add-user-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                 <div>
+                                     <label for="new-user-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                     <input type="email" id="new-user-email" placeholder="user@example.com" class="w-full p-2 border rounded-lg" required>
+                                 </div>
+                                 <div>
+                                     <label for="new-user-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                                     <input type="password" id="new-user-password" placeholder="••••••••" class="w-full p-2 border rounded-lg" required>
+                                 </div>
+                                 <div>
+                                     <label for="new-user-role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                     <select id="new-user-role" class="w-full p-2 border rounded-lg">
+                                         <option value="user">User</option>
+                                         <option value="manager">Manager</option>
+                                         <option value="admin">Admin</option>
+                                     </select>
+                                 </div>
+                                 <div class="md:col-span-3">
+                                    <button type="submit" class="w-full md:w-auto px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"><i class="fas fa-user-plus mr-2"></i>Add User</button>
+                                 </div>
+                             </form>
+                        </div>
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Manage Users</h2>
+                            <div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">User Email</th><th class="px-6 py-3">Role</th></tr></thead><tbody id="users-table-body"></tbody></table></div>
+                        </div>
+                    </div>
+                    <!-- Table Manager View -->
+                    <div id="table-manager-view" class="hidden space-y-8">
+                        <div class="bg-white rounded-xl shadow-md p-6">
+                            <h2 class="text-xl font-bold text-gray-700 mb-4">Database Table Manager</h2>
+                            <div id="collection-selector" class="flex flex-wrap items-center gap-2 mb-4">
+                                <button data-collection="inventory" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Inventory</button>
+                                <button data-collection="employees" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Employees</button>
+                                <button data-collection="machines" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Machines</button>
+                                <button data-collection="suppliers" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Suppliers</button>
+                                <button data-collection="usageLog" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Usage Logs</button>
+                                <button data-collection="purchases" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Purchases</button>
+                                <button data-collection="users" class="collection-btn px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Users</button>
+                            </div>
+                            <h3 id="generic-table-title" class="text-lg font-semibold text-gray-600 mb-2">Select a table to view its data</h3>
+                            <div id="generic-table-container" class="overflow-x-auto"></div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="item-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 id="modal-title" class="text-2xl font-bold mb-4">Add New PPE Item</h3><form id="item-form"><input type="hidden" id="item-id"><div class="space-y-4"><div><label for="item-name" class="block text-sm font-medium text-gray-700 mb-1">Item Name</label><input type="text" id="item-name" class="w-full p-3 border rounded-lg" required></div><div><label for="item-category" class="block text-sm font-medium text-gray-700 mb-1">Category</label><input type="text" id="item-category" class="w-full p-3 border rounded-lg" required></div><div><label for="item-location1" class="block text-sm font-medium text-gray-700 mb-1">Stock at Upper Office</label><input type="number" id="item-location1" class="w-full p-3 border rounded-lg" required min="0"></div><div><label for="item-location2" class="block text-sm font-medium text-gray-700 mb-1">Stock at Lower Office</label><input type="number" id="item-location2" class="w-full p-3 border rounded-lg" required min="0"></div><div><label for="item-low-stock" class="block text-sm font-medium text-gray-700 mb-1">Low Stock Threshold</label><input type="number" id="item-low-stock" class="w-full p-3 border rounded-lg" required min="0"></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-item-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Item</button></div></form></div></div>
+    
+    <div id="restock-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Restock Item</h3><form id="restock-form"><input type="hidden" id="restock-item-id"><p class="mb-4">Item: <strong id="restock-item-name"></strong></p><div class="space-y-4"><div><label for="restock-quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity Added</label><input type="number" id="restock-quantity" class="w-full p-3 border rounded-lg" required min="1"></div><div><label for="restock-cost" class="block text-sm font-medium text-gray-700 mb-1">Total Cost (Optional)</label><input type="number" id="restock-cost" placeholder="0.00" step="0.01" class="w-full p-3 border rounded-lg" min="0"></div><div><label for="restock-supplier" class="block text-sm font-medium text-gray-700 mb-1">Supplier</label><select id="restock-supplier" class="w-full p-3 border rounded-lg" required><option value="">-- Select Supplier --</option></select></div><div><label for="restock-location" class="block text-sm font-medium text-gray-700 mb-1">Add Stock To</label><select id="restock-location" class="w-full p-3 border rounded-lg" required><option value="">-- Select Location --</option><option value="location1">Upper Office</option><option value="location2">Lower Office</option></select></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-restock-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Confirm Restock</button></div></form></div></div>
+
+    <div id="use-item-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Record PPE Usage</h3><form id="use-item-form"><input type="hidden" id="use-item-id"><p class="mb-4">Item: <strong id="use-item-name"></strong></p><div class="space-y-4"><div><label for="use-employee-select" class="block text-sm font-medium text-gray-700 mb-1">Allocate to Employee</label><select id="use-employee-select" class="w-full p-3 border rounded-lg" required><option value="">-- Select Employee --</option></select></div><div><label for="use-machine-select" class="block text-sm font-medium text-gray-700 mb-1">Machine</label><select id="use-machine-select" class="w-full p-3 border rounded-lg" required><option value="">-- Select Machine --</option></select></div><div><label for="use-quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity Used</label><input type="number" id="use-quantity" class="w-full p-3 border rounded-lg" required min="1"></div><div><label for="use-location" class="block text-sm font-medium text-gray-700 mb-1">From Location</label><select id="use-location" class="w-full p-3 border rounded-lg" required><option value="">-- Select Location --</option><option value="location1">Upper Office</option><option value="location2">Lower Office</option></select></div><div><label for="use-notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label><textarea id="use-notes" rows="3" class="w-full p-3 border rounded-lg"></textarea></div></div><div id="use-item-error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative my-4" role="alert"></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-use-item-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Record Usage</button></div></form></div></div>
+    <div id="edit-log-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Edit Usage Record</h3><form id="edit-log-form"><input type="hidden" id="edit-log-id"><p class="mb-4">Item: <strong id="edit-log-item-name"></strong></p><div class="space-y-4"><div><label for="edit-log-employee-select" class="block text-sm font-medium text-gray-700 mb-1">Employee</label><select id="edit-log-employee-select" class="w-full p-3 border rounded-lg" required></select></div><div><label for="edit-log-quantity" class="block text-sm font-medium text-gray-700 mb-1">Quantity Used</label><input type="number" id="edit-log-quantity" class="w-full p-3 border rounded-lg" required min="1"></div><div><label for="edit-log-location" class="block text-sm font-medium text-gray-700 mb-1">Location</label><select id="edit-log-location" class="w-full p-3 border rounded-lg" required><option value="location1">Upper Office</option><option value="location2">Lower Office</option></select></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-edit-log-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button></div></form></div></div>
+    <div id="edit-employee-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Edit Employee Name</h3><form id="edit-employee-form"><input type="hidden" id="edit-employee-id"><div class="space-y-4"><div><label for="edit-employee-name-input" class="block text-sm font-medium text-gray-700 mb-1">Employee Full Name</label><input type="text" id="edit-employee-name-input" class="w-full p-3 border rounded-lg" required></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-edit-employee-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button></div></form></div></div>
+    <div id="edit-machine-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Edit Machine Name</h3><form id="edit-machine-form"><input type="hidden" id="edit-machine-id"><div class="space-y-4"><div><label for="edit-machine-name-input" class="block text-sm font-medium text-gray-700 mb-1">Machine Name/ID</label><input type="text" id="edit-machine-name-input" class="w-full p-3 border rounded-lg" required></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-edit-machine-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button></div></form></div></div>
+    <div id="edit-supplier-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4"><h3 class="text-2xl font-bold mb-4">Edit Supplier Name</h3><form id="edit-supplier-form"><input type="hidden" id="edit-supplier-id"><div class="space-y-4"><div><label for="edit-supplier-name-input" class="block text-sm font-medium text-gray-700 mb-1">Supplier Name</label><input type="text" id="edit-supplier-name-input" class="w-full p-3 border rounded-lg" required></div></div><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-edit-supplier-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button></div></form></div></div>
+    <div id="generic-edit-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center"><div class="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 mx-4"><h3 id="generic-modal-title" class="text-2xl font-bold mb-4">Edit Record</h3><form id="generic-edit-form" class="space-y-3"></form><div class="mt-6 flex justify-end space-x-3"><button type="button" id="cancel-generic-edit-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button><button type="submit" form="generic-edit-form" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Save Changes</button></div></div></div>
+    
+    <!-- Custom Alert Modal -->
+    <div id="alert-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 mx-4 transform transition-all sm:my-8">
+            <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900" id="alert-title">Error</h3>
+                    <div class="mt-2">
+                        <p class="text-sm text-gray-500" id="alert-message"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                <button type="button" id="alert-ok-btn" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                    OK
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Custom Confirm Modal -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 mx-4 transform transition-all">
+            <h3 class="text-xl font-bold mb-4" id="confirm-title">Are you sure?</h3>
+            <p id="confirm-message" class="text-gray-600 mb-6"></p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="confirm-cancel-btn" class="px-5 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400">Cancel</button>
+                <button type="button" id="confirm-ok-btn" class="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Confirm</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-2"></div>
+
+
+    <!-- Link to your main JavaScript file -->
+    <script type="module" src="main.js"></script>
+</body>
+</html>
+
